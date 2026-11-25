@@ -5,7 +5,7 @@ import { focusGeoapifyMap, syncGeoapifyMaps } from './geoapify-map.js';
 import { mountAdminCrudDialog } from './admin-crud.js';
 import { renderAdminUsers, loadManagedAdmins, bindAdminUserControls } from './pages/admin-users.js';
 import { renderDashboard } from './pages/dashboard.js';
-import { renderFloodMonitor, renderPublicFloodMonitor, mountFloodReportDialog, openFloodReportDialog, bindFloodReportForm, handleFloodPinStatusChange, showFloodPinDetails } from './pages/flood-monitor.js';
+import { renderFloodMonitor, renderPublicFloodMonitor, mountFloodReportDialog, openFloodReportDialog, bindFloodReportForm, handleFloodPinStatusChange, handleFloodReportVerification, showFloodPinDetails } from './pages/flood-monitor.js';
 import { renderMap } from './pages/map.js';
 import { renderRequests } from './pages/requests.js';
 import { renderPublicShelters, renderShelters } from './pages/shelters.js';
@@ -96,7 +96,10 @@ async function renderPage(page = currentPage) {
 
   document.querySelector('#breadcrumb-current').textContent = pages[currentPage].title;
   document.querySelector('#request-nav-count').textContent = requests.filter((request) => request.status !== 'ช่วยเหลือแล้ว').length;
-  document.querySelector('#flood-nav-count').textContent = floodPins.length;
+  const pendingFloodReports = floodPins.filter((pin) => !pin.verified).length;
+  const floodNavCount = document.querySelector('#flood-nav-count');
+  floodNavCount.textContent = pendingFloodReports;
+  floodNavCount.hidden = pendingFloodReports === 0;
   document.querySelectorAll('.nav-item').forEach((item) => {
     const isActive = item.dataset.page === currentPage;
     item.classList.toggle('active', isActive);
@@ -332,6 +335,21 @@ document.querySelector('#login-form').addEventListener('submit', async (event) =
   } catch (error) {
     showStorageError(error);
   }
+});
+
+pageContent.addEventListener('click', (event) => {
+  const verifyButton = event.target.closest('[data-action="verify-flood-report"]');
+  if (verifyButton) {
+    void handleFloodReportVerification(verifyButton.dataset.floodId, refreshFloodViews);
+    return;
+  }
+  if (!event.target.closest('[data-action="show-pending-flood-reports"]')) return;
+  const firstPendingRow = pageContent.querySelector('tr[data-flood-verified="false"]');
+  if (!firstPendingRow) return;
+  firstPendingRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  firstPendingRow.classList.add('is-highlighted');
+  firstPendingRow.querySelector('[data-action="verify-flood-report"]')?.focus({ preventScroll: true });
+  window.setTimeout(() => firstPendingRow.classList.remove('is-highlighted'), 1800);
 });
 
 document.querySelector('#mobile-menu').addEventListener('click', (event) => {
