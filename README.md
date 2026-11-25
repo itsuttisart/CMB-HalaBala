@@ -31,10 +31,11 @@ Geoapify key จะถูกส่งจากเบราว์เซอร์�
 โปรเจกต์มี workflow สำหรับเผยแพร่ไปยัง GitHub Pages เมื่อ push ไปยัง branch `main` หรือเมื่อสั่ง `workflow_dispatch`:
 
 1. สร้าง GitHub repository และ push โค้ดขึ้น branch `main`
-2. ใน **Settings → Secrets and variables → Actions** เพิ่ม repository secrets ชื่อ `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` และ `GEOAPIFY_API_KEY`
-3. ตรวจสอบ workflow ที่ **Actions → Deploy to GitHub Pages** และ URL เว็บไซต์ที่ workflow แสดงเมื่อเสร็จ
-4. เพิ่ม URL ของเว็บไซต์ใน Supabase Auth → URL Configuration ทั้ง Site URL และ Redirect URLs
-5. จำกัด Geoapify key ให้รับคำขอจากโดเมน GitHub Pages ที่เผยแพร่เท่านั้น
+2. ใน **Settings → Pages → Build and deployment → Source** เลือก **GitHub Actions** ไม่ใช่ **Deploy from a branch** เพื่อให้ Pages เผยแพร่ไฟล์ที่ build ไว้ใน `dist`
+3. ใน **Settings → Secrets and variables → Actions** เพิ่ม repository secrets ชื่อ `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` และ `GEOAPIFY_API_KEY`
+4. ตรวจสอบ workflow ที่ **Actions → Deploy to GitHub Pages** และ URL เว็บไซต์ที่ workflow แสดงเมื่อเสร็จ
+5. เพิ่ม URL ของเว็บไซต์ใน Supabase Auth → URL Configuration ทั้ง Site URL และ Redirect URLs
+6. จำกัด Geoapify key ให้รับคำขอจากโดเมน GitHub Pages ที่เผยแพร่เท่านั้น
 
 Workflow จะสร้างไฟล์ตั้งค่าและ `robots.txt`/`sitemap.xml` ระหว่าง build โดยไม่ commit ค่าตั้งค่าเหล่านั้นลง repository ทั้งนี้ Supabase publishable key และ Geoapify key จำเป็นต้องอยู่ใน JavaScript ที่เบราว์เซอร์ดาวน์โหลดได้ จึงมองเห็นได้สาธารณะหลังเผยแพร่; ห้ามใช้ service-role/secret key และควรเปิด RLS กับจำกัด Geoapify key ตามโดเมน
 
