@@ -1,4 +1,4 @@
 window.CMB_SUPABASE_CONFIG = {
-  url: 'https://YOUR_PROJECT_ID.supabase.co',
-  anonKey: 'YOUR_SUPABASE_PUBLISHABLE_OR_ANON_KEY',
+  url: 'https://cimnqrkliognuypgplnj.supabase.co',
+  anonKey: 'sb_publishable_TMSkUak7rAskzMuzabfZqQ_aTLIyKMB',
 };
