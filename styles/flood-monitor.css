@@ -61,6 +61,19 @@
 .flood-admin-table-panel .data-table select { min-width: 82px; min-height: 34px; }
 .verification-pill { display: inline-flex; align-items: center; padding: 3px 7px; border-radius: 10px; color: #9a7744; background: #fff4e2; font-size: 8px; white-space: nowrap; }
 .verification-pill.is-verified { color: #247857; background: #e7f6ed; }
+.flood-review-banner { display: flex; align-items: center; gap: 12px; margin: 0 0 14px; padding: 13px 15px; border: 1px solid #f0dfc2; border-radius: 10px; color: #70542d; background: linear-gradient(110deg, #fff8eb, #fffdf8); }
+.flood-review-banner.is-clear { border-color: #dcebe2; color: #3d705e; background: linear-gradient(110deg, #eff9f3, #fbfdfb); }
+.flood-review-icon { width: 34px; height: 34px; display: grid; place-items: center; flex: 0 0 auto; border-radius: 11px; color: #a56d20; background: #ffedc9; font-size: 16px; font-weight: 600; }
+.is-clear .flood-review-icon { color: #28775e; background: #dff3e7; }
+.flood-review-banner > div { min-width: 0; display: grid; gap: 2px; }
+.flood-review-banner strong { font-size: 12px; font-weight: 600; }
+.flood-review-banner small { color: #927951; font-size: 10px; line-height: 1.5; }
+.is-clear small { color: #668d7b; }
+.button-review { min-height: 34px; margin-left: auto; padding: 7px 10px; border: 1px solid #ead4ae; color: #815a21; background: #fff; font-size: 9px; white-space: nowrap; }
+.button-review:hover { background: #fff4df; }
+.button-verify { border: 1px solid #cae5d4; color: #246f50; background: #edf8f1; }
+.button-verify:hover { border-color: #9bcdb0; background: #e1f3e7; }
+.data-table tr.is-highlighted td { background: #fff8e9; transition: background .4s ease; }
 .flood-admin-count.flood-normal, .flood-count-card.flood-normal { background-color: #f5fcf8; }
 .flood-admin-count.flood-watch, .flood-count-card.flood-watch { background-color: #f5f8ff; }
 .flood-admin-count.flood-high, .flood-count-card.flood-high { background-color: #fffaf0; }
@@ -115,6 +128,10 @@
   .geoapify-search-row { grid-template-columns: 1fr; }
   .geoapify-search-row button { width: 100%; }
   .geoapify-location-button { width: 100%; }
+  .flood-review-banner { align-items: flex-start; gap: 9px; padding: 11px; }
+  .flood-review-banner strong { font-size: 11px; }
+  .flood-review-banner small { font-size: 9px; }
+  .button-review { align-self: center; padding: 7px 8px; font-size: 8px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
