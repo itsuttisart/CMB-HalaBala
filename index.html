@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="description" content="CMB-HalaBala ศูนย์ประสานงานช่วยเหลือน้ำท่วม แจ้งเหตุ ขอความช่วยเหลือ และติดตามสถานการณ์อุทกภัยในพื้นที่" />
+    <meta name="keywords" content="CMB, CMB-HalaBala, Hala-Bala, ศูนย์ประสานงานช่วยเหลือน้ำท่วม, ศูนย์ประสานงานอุทกภัย, แจ้งเหตุน้ำท่วม" />
+    <meta name="theme-color" content="#103b36" />
+    <title>CMB-HalaBala | แจ้งเหตุและประสานความช่วยเหลือ</title>
+    <!-- SEO metadata is completed with the public URL during deployment. -->
+    <link rel="stylesheet" href="node_modules/@fontsource/kanit/400.css" />
+    <link rel="stylesheet" href="node_modules/@fontsource/kanit/500.css" />
+    <link rel="stylesheet" href="node_modules/@fontsource/kanit/600.css" />
+    <link rel="stylesheet" href="node_modules/@fontsource/kanit/700.css" />
+    <link rel="stylesheet" href="node_modules/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" href="node_modules/sweetalert2/dist/sweetalert2.min.css" />
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="styles/dashboard.css" />
+    <link rel="stylesheet" href="styles/flood-monitor.css" />
+    <script src="geoapify-config.js"></script>
+    <script src="supabase-config.js"></script>
+    <script src="node_modules/sweetalert2/dist/sweetalert2.all.min.js" defer></script>
+    <script type="module" src="scripts/app.js"></script>
+  </head>
+  <body>
+    <div class="public-site" id="public-site">
+      <header class="public-header">
+        <a class="public-brand" href="#" data-view="public" aria-label="CMB-HalaBala หน้าหลัก">
+          <img class="brand-logo" src="assets/cmb-halabala-logo.png" alt="" />
+          <span><strong>CMB-HalaBala</strong><small>ศูนย์ประสานงานอุทกภัย</small></span>
+        </a>
+        <nav class="public-nav" aria-label="เมนูประชาชน">
+          <a href="#flood-monitor">Flood Monitor</a>
+          <a href="#public-announcements">ข่าวประกาศ</a>
+          <a href="#help-centers">จุดช่วยเหลือ</a>
+          <a href="#public-report">วิธีแจ้งเหตุ</a>
+          <a class="public-hotline" href="tel:1784"><span>☎</span> สายด่วน 1784</a>
+        </nav>
+        <a class="mobile-flood-link" href="#flood-monitor">Flood Monitor</a>
+        <button class="button button-outline public-login-button" id="open-login">เข้าสู่ระบบเจ้าหน้าที่ <span aria-hidden="true">→</span></button>
+      </header>
+
+      <main class="public-main">
+        <section class="public-hero">
+          <div class="hero-copy">
+            <div class="hero-status"><span class="live-dot"></span> ศูนย์ประสานงานช่วยเหลือประชาชน</div>
+            <h1>น้ำท่วม อย่ารอ<br /><span>แจ้งเราได้ทันที</span></h1>
+            <p>แจ้งเหตุ ขอความช่วยเหลือ และค้นหาจุดพักพิงใกล้คุณ<br class="desktop-break" /> ทีมประสานงานพร้อมรับข้อมูลและส่งต่อให้หน่วยงานที่เกี่ยวข้อง</p>
+            <div class="hero-actions">
+              <button class="button button-primary button-large" data-action="report"><span class="button-icon">＋</span> แจ้งเหตุ / ขอความช่วยเหลือ</button>
+              <a class="button button-white button-large" href="#help-centers"><span class="button-icon">⌖</span> ดูจุดช่วยเหลือ</a>
+            </div>
+            <a class="emergency-link" href="tel:1784"><span class="emergency-icon">!</span><span><strong>เหตุฉุกเฉินเร่งด่วน โทร 1784</strong><small>สายด่วนนิรภัย กรมป้องกันและบรรเทาสาธารณภัย</small></span><b>↗</b></a>
+          </div>
+          <div class="hero-visual" aria-hidden="true">
+            <div class="hero-orbit orbit-one"></div><div class="hero-orbit orbit-two"></div>
+            <div class="hero-sun"></div><div class="hero-hill hill-back"></div><div class="hero-hill hill-front"></div>
+            <div class="hero-water"><span></span><span></span><span></span></div>
+            <div class="hero-house"><i></i><b></b><span></span></div>
+            <div class="hero-pin"><span>⌖</span></div>
+            <div class="hero-float-card"><span class="float-pulse"></span><span><strong>แจ้งเหตุได้ตลอด 24 ชั่วโมง</strong><small>ใช้เวลาแจ้งไม่นาน</small></span></div>
+            <div class="hero-caption">CMB-HalaBala <span>•</span> พร้อมประสานความช่วยเหลือ</div>
+          </div>
+        </section>
+
+        <section class="quick-strip" aria-label="ข้อมูลช่วยเหลือ">
+          <article><span class="quick-icon quick-green">01</span><span><strong>แจ้งเหตุได้ง่าย</strong><small>ระบุพื้นที่และสิ่งที่ต้องการ</small></span></article>
+          <article><span class="quick-icon quick-blue">02</span><span><strong>ส่งต่อทีมประสานงาน</strong><small>เจ้าหน้าที่ช่วยตรวจสอบข้อมูล</small></span></article>
+          <article><span class="quick-icon quick-orange">03</span><span><strong>ทุกคนเข้าถึงได้</strong><small>ออกแบบมาเพื่อมือถือเป็นหลัก</small></span></article>
+        </section>
+
+        <div id="public-flood-monitor-root"></div>
+        <div id="public-announcements-root"></div>
+
+        <section class="public-report-section" id="public-report">
+          <div class="section-heading">
+            <span class="section-kicker">ขอความช่วยเหลือ</span>
+            <h2>แจ้งเหตุให้เราทราบ</h2>
+            <p>กดปุ่มเพื่อเปิดแบบฟอร์มแจ้งเหตุ ทีมงานจะใช้ข้อมูลที่จำเป็นเพื่อติดต่อประสานงาน</p>
+          </div>
+          <div class="report-layout">
+            <div class="report-launch-card">
+              <span class="report-launch-icon">＋</span>
+              <span class="section-kicker">แบบฟอร์มออนไลน์</span>
+              <h3>แจ้งเหตุ / ขอความช่วยเหลือ</h3>
+              <p>กรอกตำแหน่งเกิดเหตุ ข้อมูลติดต่อ และสิ่งที่จำเป็น เพื่อให้ทีมประสานงานได้สะดวก</p>
+              <button class="button button-primary button-large" data-action="report">เปิดแบบฟอร์มแจ้งเหตุ <span>→</span></button>
+              <small>ใช้เวลาประมาณ 1–2 นาที · มีเหตุฉุกเฉินโทร 1784</small>
+            </div>
+            <aside class="report-aside">
+              <div class="aside-emergency">
+                <span class="aside-emergency-icon">!</span><span class="aside-kicker">ต้องการความช่วยเหลือทันที?</span>
+                <h3>โทรสายด่วน<br />ปภ. 1784</h3>
+                <p>หากมีอันตรายถึงชีวิต ให้โทรแจ้งหน่วยงานฉุกเฉินโดยตรง ไม่ต้องรอกรอกแบบฟอร์ม</p>
+                <a class="button button-white button-call" href="tel:1784">☎ &nbsp; โทร 1784</a>
+              </div>
+              <div class="privacy-card"><span class="privacy-icon">◈</span><div><strong>ข้อมูลของคุณเป็นส่วนตัว</strong><p>ข้อมูลติดต่อจะไม่แสดงบนแผนที่สาธารณะ และใช้เพื่อการประสานงานเท่านั้น</p></div></div>
+              <div class="what-to-include"><strong>ข้อมูลที่ควรเตรียม</strong><ul><li>ตำแหน่งหรือจุดสังเกตที่ชัดเจน</li><li>จำนวนคนและกลุ่มเปราะบาง</li><li>ความช่วยเหลือที่จำเป็นที่สุด</li></ul></div>
+            </aside>
+          </div>
+        </section>
+
+        <section class="help-centers" id="help-centers">
+          <div class="section-heading section-heading-row"><div><span class="section-kicker">จุดช่วยเหลือ</span><h2>ศูนย์พักพิงใกล้พื้นที่</h2><p>ข้อมูลตัวอย่าง โปรดโทรตรวจสอบก่อนเดินทาง</p></div><a href="tel:1784" class="text-link">สอบถามสายด่วน 1784 →</a></div>
+          <div id="public-shelters-root" class="shelter-cards"></div>
+        </section>
+      </main>
+      <footer class="public-footer"><a class="public-brand footer-brand" href="#" data-view="public"><img class="brand-logo" src="assets/cmb-halabala-logo.png" alt="" /><span><strong>CMB-HalaBala</strong><small>ศูนย์ประสานงานอุทกภัย</small></span></a><span id="public-system-note">ข้อมูลตัวอย่างสำหรับต้นแบบ <span class="footer-dot">•</span> ยังไม่ใช่ช่องทางแจ้งเหตุจริง</span><a href="tel:1784">สายด่วน ปภ. 1784</a></footer>
+    </div>
+
+    <dialog class="request-dialog" id="request-dialog" aria-labelledby="request-dialog-title">
+      <form class="request-form-dialog" id="request-form">
+        <div class="dialog-heading">
+          <div><span class="section-kicker">ขอความช่วยเหลือ</span><h2 id="request-dialog-title">แจ้งเหตุ / ขอความช่วยเหลือ</h2><p>กรอกข้อมูลที่จำเป็น ทีมงานจะใช้ข้อมูลนี้เพื่อประสานงาน</p></div>
+          <button class="icon-button" type="button" id="close-dialog" aria-label="ปิดแบบฟอร์ม">×</button>
+        </div>
+        <div class="form-section-title"><span>1</span><div><strong>ข้อมูลสำหรับติดต่อกลับ</strong><small>ข้อมูลของผู้แจ้งเหตุ</small></div></div>
+        <div class="form-grid">
+          <label>ชื่อผู้แจ้ง <span class="required">*</span><input name="name" autocomplete="name" required placeholder="ชื่อและนามสกุล" /></label>
+          <label>เบอร์ติดต่อ <span class="required">*</span><input name="phone" type="tel" inputmode="tel" autocomplete="tel" required placeholder="เช่น 08X-XXX-XXXX" /></label>
+        </div>
+        <div class="form-section-title form-section-space"><span>2</span><div><strong>รายละเอียดเหตุและความช่วยเหลือ</strong><small>ช่วยให้ทีมเข้าถึงและจัดลำดับได้ถูกต้อง</small></div></div>
+        <div class="form-grid">
+          <label class="form-wide">พื้นที่ / จุดเกิดเหตุ <span class="required">*</span><input name="location" autocomplete="street-address" required placeholder="หมู่บ้าน ตำบล อำเภอ หรือจุดสังเกต" /></label>
+          <label>ต้องการความช่วยเหลือด้านใด
+            <select name="need"><option>อพยพ / ติดค้าง</option><option>อาหารและน้ำดื่ม</option><option>ยาและการแพทย์</option><option>เรือหรือการเดินทาง</option><option>สิ่งของจำเป็น</option><option>อื่น ๆ</option></select>
+          </label>
+          <label>จำนวนผู้ประสบภัย <span class="required">*</span><input name="people" type="number" inputmode="numeric" min="1" value="1" required /></label>
+          <label class="form-wide">ข้อมูลเพิ่มเติม<textarea name="details" rows="3" placeholder="ระดับน้ำ สภาพพื้นที่ หรือข้อมูลที่ช่วยให้ทีมเข้าถึงได้"></textarea></label>
+          <label class="urgent-toggle form-wide"><input name="urgent" type="checkbox" /><span><strong>มีผู้ป่วย ผู้สูงอายุ เด็กเล็ก หรือผู้ติดค้าง</strong><small>ทำเครื่องหมายเพื่อให้เจ้าหน้าที่พิจารณาความเร่งด่วน</small></span></label>
+          <label class="consent-toggle form-wide"><input name="consent" type="checkbox" required /><span>ยินยอมให้ใช้ข้อมูลติดต่อเพื่อประสานงานช่วยเหลือในเหตุนี้ <span class="required">*</span></span></label>
+        </div>
+        <p class="privacy-note">ต้นแบบนี้ยังไม่ได้เชื่อมฐานข้อมูลกลาง ข้อมูลจะถูกเก็บไว้ในเบราว์เซอร์เครื่องนี้เท่านั้น</p>
+        <div class="dialog-actions">
+          <button class="button button-quiet" type="button" id="cancel-dialog">ยกเลิก</button>
+          <button class="button button-primary button-large" type="submit">ส่งข้อมูลแจ้งเหตุ <span>→</span></button>
+        </div>
+      </form>
+    </dialog>
+
+    <section class="login-page" id="login-page" hidden>
+      <div class="login-aside">
+        <a class="public-brand login-brand" href="#" data-view="public"><img class="brand-logo" src="assets/cmb-halabala-logo.png" alt="" /><span><strong>CMB-HalaBala</strong><small>ศูนย์ประสานงานอุทกภัย</small></span></a>
+        <div class="login-aside-copy"><span class="section-kicker">STAFF PORTAL</span><h1>ทุกความช่วยเหลือ<br />เริ่มจากการประสานงาน</h1><p>ระบบสำหรับเจ้าหน้าที่ส่วนกลางและผู้ดูแลเมนู เพื่อจัดการคำร้องและข้อมูลช่วยเหลือ</p><div class="login-decoration"><span>H</span><i></i><b></b></div></div>
+        <span class="login-aside-foot">CMB-HalaBala · Staff workspace</span>
+      </div>
+      <div class="login-main">
+        <button class="back-public" data-view="public">← กลับหน้าประชาชน</button>
+        <div class="login-card">
+          <span class="section-kicker">เข้าสู่ระบบเจ้าหน้าที่</span><h2>ยินดีต้อนรับ</h2><p class="login-intro">เลือกประเภทบัญชีและกรอกข้อมูลเพื่อเข้าสู่ระบบ</p>
+          <form id="login-form">
+            <label class="login-field">อีเมล<input type="email" name="email" autocomplete="username" required placeholder="name@example.com" /></label>
+            <label class="login-field">รหัสผ่าน<input type="password" name="password" autocomplete="current-password" required placeholder="กรอกรหัสผ่าน" /></label>
+            <button type="submit" class="button button-primary button-large login-submit">เข้าสู่ระบบ <span>→</span></button>
+          </form>
+          <div class="login-prototype-note" id="login-system-note"><span>ⓘ</span><p><strong>ยังไม่ได้เชื่อม Supabase</strong> เพิ่ม URL และ publishable/anon key ใน supabase-config.js ก่อนเข้าสู่ระบบ</p></div>
+          <button class="preview-admin-button" id="preview-admin">เปิดดูตัวอย่างหน้าระบบเจ้าหน้าที่ <span>→</span></button>
+        </div>
+      </div>
+    </section>
+
+    <div class="app-shell" id="admin-app" hidden>
+      <aside class="sidebar" id="sidebar">
+        <a class="brand" href="#" data-page="dashboard" aria-label="CMB-HalaBala หน้าแรก"><img class="brand-logo" src="assets/cmb-halabala-logo.png" alt="" /><span class="brand-copy"><strong>CMB-HalaBala</strong><small>ศูนย์ประสานงานอุทกภัย</small></span></a>
+        <div class="nav-label">ศูนย์บัญชาการ</div>
+        <nav class="main-nav" aria-label="เมนูหลัก">
+          <button class="nav-item active" data-page="dashboard"><span class="nav-icon">⌂</span>ภาพรวมสถานการณ์</button>
+          <button class="nav-item" data-page="requests"><span class="nav-icon">✚</span>คำร้องขอความช่วยเหลือ <span class="nav-count" id="request-nav-count">0</span></button>
+          <button class="nav-item" data-page="flood-monitor"><span class="nav-icon">⌖</span>อัปเดตสถานการณ์น้ำท่วม <span class="nav-count" id="flood-nav-count">0</span></button>
+          <button class="nav-item" data-page="map"><span class="nav-icon">⌖</span>แผนที่สถานการณ์</button>
+          <button class="nav-item" data-page="shelters"><span class="nav-icon">⌂</span>ศูนย์พักพิง</button>
+          <button class="nav-item" data-page="supplies"><span class="nav-icon">▤</span>คลังสิ่งของ</button>
+          <button class="nav-item" data-page="volunteers"><span class="nav-icon">♧</span>อาสาสมัครและทีม</button>
+          <button class="nav-item" data-page="announcements"><span class="nav-icon">▱</span>ข่าวประกาศ</button>
+          <button class="nav-item" data-page="admin-users" id="admin-users-nav" hidden><span class="nav-icon">♙</span>จัดการบัญชีผู้ดูแล</button>
+        </nav>
+        <div class="sidebar-bottom">
+          <div class="help-card"><span class="help-icon">!</span><div><strong>เหตุฉุกเฉิน?</strong><p>โทรสายด่วน ปภ. 1784</p></div><a href="tel:1784" aria-label="โทรสายด่วน ปภ. 1784">↗</a></div>
+          <div class="user-profile"><div class="avatar" id="admin-avatar">จน</div><div class="user-copy"><strong id="admin-display-name">โหมดตัวอย่าง</strong><small id="admin-role-label">ไม่มีการยืนยันตัวตน</small></div><button class="user-more" id="logout-button" type="button" aria-label="ออกจากระบบ" hidden>↪</button></div>
+        </div>
+      </aside>
+      <main class="main-area">
+        <header class="topbar">
+          <button class="mobile-menu" id="mobile-menu" aria-label="เปิดเมนู" aria-expanded="false">☰</button>
+          <div class="breadcrumb"><span>พื้นที่ปฏิบัติงาน</span><b>/</b><strong id="breadcrumb-current">ภาพรวมสถานการณ์</strong></div>
+          <div class="topbar-actions"><div class="prototype-status" id="prototype-status">โหมดตัวอย่าง</div><span class="today-date" id="today-date"></span><button class="button button-outline button-small" id="back-to-public">หน้าประชาชน</button><button class="button button-primary button-small" id="new-request-top"><span>＋</span> แจ้งเหตุใหม่</button></div>
+        </header>
+        <div class="prototype-banner" id="prototype-banner">หน้าระบบเจ้าหน้าที่นี้เป็นตัวอย่าง ไม่มีการยืนยันตัวตนหรือเชื่อมฐานข้อมูลจริง <button id="leave-admin">กลับหน้าประชาชน</button></div>
+        <div class="page-content" id="page-content"></div>
+        <footer class="page-footer"><span>CMB-HalaBala <span class="footer-dot">•</span> ระบบประสานงานช่วยเหลืออุทกภัย</span><span>ข้อมูลตัวอย่าง <span class="footer-dot">•</span> อัปเดต <span id="updated-time"></span></span></footer>
+      </main>
+    </div>
+  </body>
+</html>

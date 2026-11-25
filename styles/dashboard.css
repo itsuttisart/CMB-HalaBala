@@ -1,0 +1,32 @@
+.dashboard-modules { margin: 4px 0 17px; padding: 14px; border: 1px solid #e8eeeb; border-radius: 9px; background: #fbfdfc; }
+.modules-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 11px; }
+.modules-heading h2 { margin: 0; color: #344a41; font-size: 13px; font-weight: 500; }
+.modules-heading p { margin: 2px 0 0; color: #94a09a; font-size: 9px; }
+.module-sync { color: #899a91; font-size: 8px; }
+.dashboard-module-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+.module-link-card { min-width: 0; display: flex; align-items: center; gap: 8px; padding: 9px; border: 1px solid #e9efec; border-radius: 7px; color: #4c6258; background: #fff; text-align: left; transition: .15s ease; }
+.module-link-card:hover, .module-link-card:focus-visible { border-color: #9ccdb9; background: #f6fbf8; outline: none; }
+.module-card-icon { width: 29px; height: 29px; display: grid; place-items: center; flex: 0 0 auto; border-radius: 8px; color: #21876d; background: #e8f5ef; font-size: 14px; }
+.module-icon-amber { color: #b17c2d; background: #fff3df; }
+.module-icon-blue { color: #5b7ba0; background: #edf3fa; }
+.module-icon-purple { color: #806faf; background: #f2effa; }
+.module-card-copy { min-width: 0; display: grid; gap: 1px; }
+.module-card-copy strong { overflow: hidden; color: #40564c; font-size: 9px; font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }
+.module-card-copy small { overflow: hidden; color: #909d96; font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
+.module-arrow { margin-left: auto; color: #91a79b; font-size: 12px; }
+.module-flood { border-color: #dcece4; background: #f5fbf7; }
+
+@media (min-width: 760px) {
+  .dashboard-module-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; }
+}
+
+@media (max-width: 760px) {
+  .dashboard-modules { padding: 11px; }
+  .modules-heading { align-items: flex-start; }
+  .module-sync { display: none; }
+}
+
+@media (max-width: 480px) {
+  .dashboard-module-grid { grid-template-columns: minmax(0, 1fr); }
+  .module-link-card { min-height: 49px; }
+}

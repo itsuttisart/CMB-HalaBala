@@ -1,0 +1,15 @@
+{
+  "name": "cmb-halabala",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Mobile-first flood response coordination prototype",
+  "scripts": {
+    "build:pages": "node build-site.mjs"
+  },
+  "dependencies": {
+    "@fontsource/kanit": "^5.2.6",
+    "@supabase/supabase-js": "^2.119.2",
+    "leaflet": "^1.9.4",
+    "sweetalert2": "^11.26.17"
+  }
+}

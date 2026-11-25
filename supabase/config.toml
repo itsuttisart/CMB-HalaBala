@@ -1,0 +1,4 @@
+project_id = "cmb-halabala"
+
+[functions.admin-users]
+verify_jwt = true

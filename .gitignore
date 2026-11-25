@@ -1,0 +1,5 @@
+node_modules/
+dist/
+google-maps-config.js
+supabase-config.js
+geoapify-config.js
