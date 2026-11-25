@@ -20,7 +20,7 @@ async function callAdminFunction(body) {
   if (error) {
     let message = error.message;
     if (error.context?.status === 404) {
-      message = 'ไม่พบ Edge Function admin-users ใน Supabase โปรด deploy ฟังก์ชันไปยังโปรเจกต์เดียวกับเว็บไซต์ก่อน';
+      message = 'ไม่พบ Edge Function admin-users ใน Supabase โปรเจกต์นี้ ตรวจ Project URL และ deploy ฟังก์ชันพร้อมตั้ง SUPABASE_SERVICE_ROLE_KEY ตาม README ก่อน แล้วลองอีกครั้ง';
     } else if (error.name === 'FunctionsFetchError') {
       message = 'เชื่อมต่อ Edge Function admin-users ไม่สำเร็จ ตรวจสอบการ deploy, CORS และการเชื่อมต่อเครือข่าย';
     } else if (error.context && typeof error.context.json === 'function') {
@@ -51,8 +51,13 @@ function moduleNames(modules) {
 
 export function renderAdminUsers() {
   return `
-    <div class="page-heading"><div><span class="eyebrow">สิทธิ์และบัญชี</span><h1>จัดการบัญชีผู้ดูแล</h1><p>เชิญเจ้าหน้าที่และกำหนดสิทธิ์แยกตามเมนู</p></div><button class="button button-primary" data-admin-user-action="create">＋ เชิญผู้ดูแล</button></div>
-    <div class="info-banner">บัญชีที่สร้างจากหน้านี้เป็นผู้ดูแลเมนูเท่านั้น การเพิ่ม/เปลี่ยนผู้ดูแลสูงสุดทำได้จาก Supabase Dashboard เท่านั้น</div>
+    <div class="page-heading"><div><span class="eyebrow">สิทธิ์และบัญชี</span><h1>จัดการบัญชีผู้ดูแล</h1><p>เชิญเจ้าหน้าที่และกำหนดสิทธิ์แยกตามเมนูได้จากหน้านี้</p></div><button class="button button-primary" data-admin-user-action="create">＋ เชิญผู้ดูแล</button></div>
+    <div class="info-banner">กด “เชิญผู้ดูแล” กรอกอีเมลและชื่อ เลือกเมนูที่รับผิดชอบ แล้วส่งคำเชิญทางอีเมล ภายหลังแก้ไขสิทธิ์ ระงับ หรือถอนบัญชีได้ที่นี่ ไม่ต้องแก้โค้ด · การตั้ง superadmin บัญชีแรกเป็นขั้นตอนเริ่มต้นครั้งเดียว</div>
+    <section class="admin-users-guide" aria-label="ขั้นตอนเชิญผู้ดูแล">
+      <div><span>01</span><strong>ระบุอีเมล</strong><small>ส่งคำเชิญให้ตั้งรหัสผ่าน</small></div>
+      <div><span>02</span><strong>เลือกสิทธิ์เมนู</strong><small>กำหนดเฉพาะงานที่ดูแล</small></div>
+      <div><span>03</span><strong>จัดการภายหลัง</strong><small>แก้ไข ระงับ หรือลบบัญชี</small></div>
+    </section>
     <div class="table-wrap"><table class="data-table"><thead><tr><th>ชื่อ / อีเมล</th><th>เมนูที่ได้รับมอบหมาย</th><th>สถานะ</th><th>วันที่สร้าง</th><th>จัดการ</th></tr></thead><tbody>${managedAdmins.length ? managedAdmins.map((admin) => `
       <tr>
         <td data-label="ชื่อ / อีเมล"><div class="table-primary">${escapeHtml(admin.display_name)}</div><div class="table-secondary">${escapeHtml(admin.email)}</div></td>
