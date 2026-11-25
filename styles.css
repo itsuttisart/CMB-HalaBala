@@ -235,8 +235,12 @@ button { cursor: pointer; }
 .nav-item { width: 100%; display: flex; align-items: center; gap: 12px; border: 0; border-radius: 8px; padding: 10px 11px; text-align: left; color: #b6c8c3; background: transparent; font-size: 12px; transition: .15s ease; }
 .nav-item:hover { background: #ffffff0c; color: white; }
 .nav-item.active { color: #fff; background: #ffffff15; box-shadow: inset 3px 0 #48c2a2; }
-.nav-icon { width: 17px; font-size: 17px; line-height: 1; text-align: center; opacity: .9; }
+.nav-icon { width: 20px; height: 20px; flex: 0 0 20px; overflow: visible; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; opacity: .86; transition: opacity .16s ease, transform .16s ease; }
+.nav-item-label { min-width: 0; }
+.nav-item:hover .nav-icon, .nav-item.active .nav-icon { opacity: 1; }
+.nav-item:hover .nav-icon { transform: translateX(1px); }
 .nav-count { margin-left: auto; font-size: 10px; color: #b9d1ca; background: #ffffff16; min-width: 21px; height: 19px; display: grid; place-items: center; border-radius: 9px; }
+.nav-count-pending { color: #fff; background: #c84b4b; }
 .sidebar-bottom { margin-top: auto; }
 .help-card { border: 1px solid #ffffff18; background: #ffffff08; border-radius: 9px; margin: 0 2px 15px; padding: 12px 10px; display: flex; align-items: flex-start; gap: 9px; }
 .help-icon { width: 19px; height: 19px; display: grid; place-items: center; flex: 0 0 auto; color: #f0c36d; border: 1px solid #f0c36d88; border-radius: 50%; font-weight: 700; font-size: 12px; }
@@ -258,6 +262,11 @@ button { cursor: pointer; }
 .admin-module-options legend { padding: 0 5px; color: #52665c; font-size: 10px; }
 .admin-module-options label { display: flex; align-items: center; gap: 7px; color: #586c61; font-size: 9px; }
 .admin-module-options input { width: 16px; height: 16px; accent-color: #168875; }
+.admin-users-guide { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 13px 0 17px; }
+.admin-users-guide > div { min-width: 0; display: grid; grid-template-columns: 29px minmax(0, 1fr); align-items: center; column-gap: 9px; padding: 11px 12px; border: 1px solid #e4eee8; border-radius: 10px; background: linear-gradient(135deg, #fff, #f5faf7); }
+.admin-users-guide > div > span { width: 28px; height: 28px; display: grid; place-items: center; grid-row: span 2; border-radius: 9px; color: #24765f; background: #e4f3eb; font-size: 10px; font-weight: 600; }
+.admin-users-guide strong { color: #405c4e; font-size: 11px; font-weight: 600; }
+.admin-users-guide small { color: #86958c; font-size: 9px; }
 .info-banner-error { border-color: #f0d7d1; color: #9c4a3e; background: #fff6f3; }
 .admin-user-dialog { max-width: 580px; }
 .admin-record-dialog { max-width: 700px; }
@@ -513,19 +522,20 @@ h1 { margin: 4px 0 3px; font-size: 23px; line-height: 1.35; letter-spacing: -.4p
     width: 100%;
     height: auto;
     min-height: 0;
-    padding: 5px 4px calc(5px + env(safe-area-inset-bottom));
+    padding: 5px 6px calc(5px + env(safe-area-inset-bottom));
     transform: none;
     border-top: 1px solid #ffffff20;
     box-shadow: 0 -7px 25px #102a2a18;
   }
   .sidebar .brand, .sidebar .nav-label, .sidebar-bottom { display: none; }
-  .main-nav { display: flex; align-items: stretch; justify-content: space-around; gap: 2px; overflow-x: auto; scrollbar-width: none; }
+  .main-nav { display: flex; align-items: stretch; justify-content: flex-start; gap: 4px; overflow-x: auto; padding: 0 2px; scrollbar-width: none; scroll-snap-type: x mandatory; overscroll-behavior-x: contain; }
   .main-nav::-webkit-scrollbar { display: none; }
-  .nav-item { min-width: 58px; min-height: 56px; flex: 1 0 0; display: flex; flex-direction: column; justify-content: center; gap: 3px; padding: 5px 2px; border-radius: 7px; text-align: center; white-space: nowrap; font-size: 8px; }
-  .nav-item.active { box-shadow: inset 0 2px #48c2a2; }
-  .nav-icon { width: auto; font-size: 17px; }
-  .nav-count { display: none; }
-  .main-area { margin-left: 0; padding-bottom: 71px; }
+  .nav-item { position: relative; min-width: 76px; min-height: 62px; flex: 0 0 76px; display: flex; flex-direction: column; justify-content: center; gap: 4px; padding: 5px 3px; border-radius: 9px; text-align: center; white-space: nowrap; font-size: 9px; scroll-snap-align: center; }
+  .nav-item.active { color: #fff; background: #ffffff13; box-shadow: inset 0 2px #48c2a2; }
+  .nav-icon { width: 21px; height: 21px; flex: 0 0 21px; }
+  .nav-item-label { max-width: 100%; overflow: hidden; text-overflow: ellipsis; font-size: 9px; line-height: 1.2; }
+  .nav-count { position: absolute; top: 2px; right: 12px; min-width: 17px; height: 17px; margin: 0; border: 2px solid #123833; color: #fff; background: #ca4c4c; font-size: 8px; }
+  .main-area { margin-left: 0; padding-bottom: 79px; }
   .mobile-menu { display: none; }
   .topbar { position: sticky; top: 0; z-index: 15; height: 56px; padding: 0 11px; }
   .breadcrumb { margin-right: auto; }
@@ -600,6 +610,9 @@ h1 { margin: 4px 0 3px; font-size: 23px; line-height: 1.35; letter-spacing: -.4p
   .section-heading-row { align-items: flex-start; }
   .shelter-cards { grid-template-columns: 1fr; gap: 8px; }
   .public-footer { padding: 15px 13px calc(15px + env(safe-area-inset-bottom)); gap: 8px; }
+  .admin-users-guide { grid-template-columns: minmax(0, 1fr); gap: 7px; margin: 10px 0 13px; }
+  .admin-users-guide > div { grid-template-columns: 27px minmax(0, 1fr); padding: 9px 10px; }
+  .admin-users-guide > div > span { width: 26px; height: 26px; }
   .login-main { padding: 62px 13px 20px; }
   .login-card { padding: 20px 14px; }
   .login-card > h2 { font-size: 22px; }
