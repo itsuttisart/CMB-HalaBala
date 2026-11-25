@@ -36,9 +36,14 @@
           <a href="#public-report">วิธีแจ้งเหตุ</a>
           <a class="public-hotline" href="tel:1784"><span>☎</span> สายด่วน 1784</a>
         </nav>
-        <a class="mobile-flood-link" href="#flood-monitor">Flood Monitor</a>
         <button class="button button-outline public-login-button" id="open-login">เข้าสู่ระบบเจ้าหน้าที่ <span aria-hidden="true">→</span></button>
       </header>
+      <nav class="public-mobile-nav" aria-label="เมนูหลักสำหรับมือถือ">
+        <a href="#flood-monitor"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z" /><circle cx="12" cy="10" r="2.5" /></svg><small>สถานการณ์</small></a>
+        <a href="#public-announcements"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6z" /><path d="M14 3v5h5M9 12h7M9 16h7" /></svg><small>ข่าวสาร</small></a>
+        <a href="#public-report"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 8v8M8 12h8" /></svg><small>แจ้งเหตุ</small></a>
+        <a href="#help-centers"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 11 9-8 9 8" /><path d="M5 10v10h14V10M9 20v-6h6v6" /></svg><small>ศูนย์พักพิง</small></a>
+      </nav>
 
       <main class="public-main">
         <section class="public-hero">
@@ -75,7 +80,7 @@
         <section class="public-report-section" id="public-report">
           <div class="section-heading">
             <span class="section-kicker">ขอความช่วยเหลือ</span>
-            <h2>แจ้งเหตุให้เราทราบ</h2>
+            <h2><span class="section-heading-icon report-section-icon" aria-hidden="true">＋</span>แจ้งเหตุให้เราทราบ</h2>
             <p>กดปุ่มเพื่อเปิดแบบฟอร์มแจ้งเหตุ ทีมงานจะใช้ข้อมูลที่จำเป็นเพื่อติดต่อประสานงาน</p>
           </div>
           <div class="report-layout">
@@ -101,7 +106,7 @@
         </section>
 
         <section class="help-centers" id="help-centers">
-          <div class="section-heading section-heading-row"><div><span class="section-kicker">จุดช่วยเหลือ</span><h2>ศูนย์พักพิงใกล้พื้นที่</h2><p>ข้อมูลตัวอย่าง โปรดโทรตรวจสอบก่อนเดินทาง</p></div><a href="tel:1784" class="text-link">สอบถามสายด่วน 1784 →</a></div>
+          <div class="section-heading section-heading-row"><div><span class="section-kicker">จุดช่วยเหลือ</span><h2><span class="section-heading-icon shelter-section-icon" aria-hidden="true">⌂</span>ศูนย์พักพิงใกล้พื้นที่</h2><p>ข้อมูลตัวอย่าง โปรดโทรตรวจสอบก่อนเดินทาง</p></div><a href="tel:1784" class="text-link">สอบถามสายด่วน 1784 →</a></div>
           <div id="public-shelters-root" class="shelter-cards"></div>
         </section>
       </main>

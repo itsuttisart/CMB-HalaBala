@@ -14,7 +14,7 @@ export function renderPublicAnnouncements() {
   const published = announcements.filter((notice) => notice.isPublished);
   return `
     <section class="help-centers public-announcements" id="public-announcements">
-      <div class="section-heading"><span class="section-kicker">ประกาศจากศูนย์ประสานงาน</span><h2>ข่าวสารและคำแนะนำ</h2><p>ติดตามข้อมูลที่เผยแพร่โดยผู้ดูแลระบบ</p></div>
+      <div class="section-heading"><span class="section-kicker">ประกาศจากศูนย์ประสานงาน</span><h2><span class="section-heading-icon announcements-section-icon" aria-hidden="true">▤</span>ข่าวสารและคำแนะนำ</h2><p>ติดตามข้อมูลที่เผยแพร่โดยผู้ดูแลระบบ</p></div>
       <div class="content-grid">${published.length ? published.map((notice) => `<article class="content-card"><span class="card-kicker">${escapeHtml(notice.tag)}</span><h3>${escapeHtml(notice.title)}</h3><p>${escapeHtml(notice.details)}</p></article>`).join('') : '<div class="empty-state"><strong>ยังไม่มีประกาศ</strong>โปรดติดตามข้อมูลจากหน่วยงานท้องถิ่น</div>'}</div>
     </section>`;
 }

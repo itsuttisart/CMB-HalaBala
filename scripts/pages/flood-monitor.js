@@ -1,27 +1,47 @@
-import { DEFAULT_MAP_CENTER, FLOOD_STATUSES, pages } from '../data.js';
+import { FLOOD_STATUSES, pages } from '../data.js';
 import { createRecord, floodPins, getFloodCounts, getFloodStatus, updateRecord } from '../store.js';
-import { isSupabaseConfigured } from '../supabase-client.js';
+import { getSupabaseClient, isSupabaseConfigured } from '../supabase-client.js';
 import { escapeHtml, formatTime } from '../utils.js';
+
+const FLOOD_MEDIA_BUCKET = 'flood-report-media';
+const IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/heic', 'image/heif']);
+const VIDEO_TYPES = new Set(['video/mp4', 'video/quicktime', 'video/webm', 'video/x-msvideo']);
+const MIME_BY_EXTENSION = {
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  png: 'image/png',
+  webp: 'image/webp',
+  gif: 'image/gif',
+  heic: 'image/heic',
+  heif: 'image/heif',
+  mp4: 'video/mp4',
+  mov: 'video/quicktime',
+  webm: 'video/webm',
+  avi: 'video/x-msvideo',
+};
+const EXTENSION_BY_MIME = Object.fromEntries(Object.entries(MIME_BY_EXTENSION).map(([extension, mimeType]) => [mimeType, extension]));
+const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+const MAX_VIDEO_BYTES = 50 * 1024 * 1024;
 
 const pinDialogMarkup = `
   <dialog class="request-dialog pin-dialog" id="flood-report-dialog" aria-labelledby="flood-report-title">
     <form class="request-form-dialog" id="flood-report-form">
       <div class="dialog-heading">
-        <div><span class="section-kicker">FLOOD MONITOR</span><h2 id="flood-report-title">บันทึกข้อมูลพื้นที่</h2><p>ตรวจสอบพิกัดและกรอกสถานการณ์ที่พบ</p></div>
+        <div><span class="section-kicker">FLOOD MONITOR</span><h2 id="flood-report-title">บันทึกข้อมูลพื้นที่</h2><p>ระบุตำแหน่งด้วย GPS ค้นหาที่อยู่ หรือกรอกพิกัด</p></div>
         <button class="icon-button" type="button" data-close-flood-dialog aria-label="ปิดแบบฟอร์ม">×</button>
       </div>
       <section class="coordinate-fields" aria-label="พิกัดพื้นที่">
-        <strong>⌖ พิกัดที่เลือก</strong>
+        <strong>⌖ ตำแหน่งรายงาน</strong>
         <div class="form-grid">
-          <label>ละติจูด (Latitude) <span class="required">*</span><input name="latitude" type="number" inputmode="decimal" min="-90" max="90" step="any" required /></label>
-          <label>ลองจิจูด (Longitude) <span class="required">*</span><input name="longitude" type="number" inputmode="decimal" min="-180" max="180" step="any" required /></label>
+          <label>ละติจูด (Latitude) <span class="required">*</span><input name="latitude" type="number" inputmode="decimal" min="-90" max="90" step="any" required placeholder="เช่น 6.123456" /></label>
+          <label>ลองจิจูด (Longitude) <span class="required">*</span><input name="longitude" type="number" inputmode="decimal" min="-180" max="180" step="any" required placeholder="เช่น 101.123456" /></label>
         </div>
         <button class="button button-outline button-small geoapify-location-button" type="button" data-current-location>⌖ ใช้ตำแหน่งปัจจุบันของฉัน</button>
         <div class="geoapify-search-row">
           <label>ค้นหาที่อยู่หรือสถานที่<input name="locationSearch" maxlength="250" placeholder="เช่น หมู่บ้าน ตำบล อำเภอ จังหวัด" /></label>
           <button class="button button-outline button-small" type="button" data-geocode-location>ค้นหาพิกัด</button>
         </div>
-        <small>แตะแผนที่ ใช้ตำแหน่งมือถือ หรือค้นหาที่อยู่ได้ · การระบุตำแหน่งต้องใช้ HTTPS และอนุญาต Location</small>
+        <small>ไม่จำเป็นต้องแตะแผนที่ · ใช้ GPS ค้นหาที่อยู่ หรือกรอกพิกัดเองได้ · GPS ต้องใช้ HTTPS และได้รับอนุญาต Location</small>
       </section>
       <div class="form-grid flood-location-fields">
         <label>หมู่บ้าน <span class="required">*</span><input name="village" required maxlength="100" placeholder="ชื่อหมู่บ้าน / ชุมชน" /></label>
@@ -43,15 +63,16 @@ const pinDialogMarkup = `
       </div>
       <section class="flood-media-fields" aria-label="สื่อประกอบ">
         <strong>▧ สื่อประกอบ (ไม่บังคับ)</strong>
-        <label>รูปภาพ<input name="imageFile" type="file" accept="image/jpeg,image/png,image/gif" data-max-bytes="10485760" data-file-name="image-file-name" /><small>JPG, PNG, GIF ขนาดไม่เกิน 10 MB</small></label>
-        <label>URL รูปภาพ<input name="imageUrl" type="url" placeholder="https://..." /></label>
-        <label>วิดีโอ<input name="videoFile" type="file" accept="video/mp4,video/quicktime,video/x-msvideo" data-max-bytes="52428800" data-file-name="video-file-name" /><small>MP4, MOV, AVI ขนาดไม่เกิน 50 MB</small></label>
-        <label>URL วิดีโอ<input name="videoUrl" type="url" placeholder="URL วิดีโอหรือ YouTube" /></label>
-        <p id="image-file-name" class="selected-file-name">ยังไม่ได้เลือกรูปภาพ</p>
-        <p id="video-file-name" class="selected-file-name">ยังไม่ได้เลือกวิดีโอ</p>
-        <small class="flood-media-warning">ไฟล์ที่เลือกจะแสดงเป็นชื่อไฟล์เท่านั้น ต้นแบบนี้ยังไม่ได้อัปโหลดไฟล์ไปยังระบบหรือเก็บไฟล์ไว้</small>
+        <label>แนบรูปภาพ<input name="imageFile" type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif" data-file-name="image-file-name" /><small>JPG, PNG, WebP, GIF หรือ HEIC · ไม่เกิน 10 MB</small></label>
+        <label>หรือ URL รูปภาพ<input name="imageUrl" type="url" placeholder="https://..." /></label>
+        <label>แนบวิดีโอ<input name="videoFile" type="file" accept="video/mp4,video/quicktime,video/webm,video/x-msvideo" data-file-name="video-file-name" /><small>MP4, MOV, WebM หรือ AVI · ไม่เกิน 50 MB</small></label>
+        <label>หรือ URL วิดีโอ<input name="videoUrl" type="url" placeholder="URL วิดีโอหรือ YouTube" /></label>
+        <p id="image-file-name" class="selected-file-name" aria-live="polite">ยังไม่ได้เลือกรูปภาพ</p>
+        <p id="video-file-name" class="selected-file-name" aria-live="polite">ยังไม่ได้เลือกวิดีโอ</p>
+        <small class="flood-media-warning">${isSupabaseConfigured() ? 'ไฟล์จะอัปโหลดเข้า Supabase Storage และแสดงพร้อมรายงานหลังเจ้าหน้าที่ตรวจสอบ ผู้ที่มีลิงก์ตรงสามารถเข้าถึงไฟล์ได้' : 'การอัปโหลดไฟล์ต้องเชื่อมต่อ Supabase และสร้าง Storage bucket ก่อน'}</small>
       </section>
-      <p class="privacy-note">${isSupabaseConfigured() ? 'รายงานจะบันทึกใน Supabase และแสดงต่อสาธารณะหลังเจ้าหน้าที่ตรวจสอบ ระบบจะขอตำแหน่งเมื่อคุณกดปุ่มเท่านั้นและไม่ติดตามต่อเนื่อง ไฟล์ที่เลือกยังไม่ถูกอัปโหลด' : 'ข้อมูลต้นแบบบันทึกไว้ในเบราว์เซอร์เครื่องนี้เท่านั้น ระบบจะขอตำแหน่งเมื่อคุณกดปุ่มเท่านั้นและไม่ติดตามต่อเนื่อง รายงานจากประชาชนจะแสดงเป็น “รอตรวจสอบ”'}</p>
+      <p class="upload-status" id="flood-upload-status" role="status" aria-live="polite" hidden></p>
+      <p class="privacy-note">${isSupabaseConfigured() ? 'รายงานจะบันทึกใน Supabase และแสดงต่อสาธารณะหลังเจ้าหน้าที่ตรวจสอบ ระบบจะขอตำแหน่งเมื่อคุณกดปุ่มเท่านั้นและไม่ติดตามต่อเนื่อง' : 'ข้อมูลต้นแบบบันทึกไว้ในเบราว์เซอร์เครื่องนี้เท่านั้น ระบบจะขอตำแหน่งเมื่อคุณกดปุ่มเท่านั้นและไม่ติดตามต่อเนื่อง รายงานจากประชาชนจะแสดงเป็น “รอตรวจสอบ”'}</p>
       <div class="dialog-actions">
         <button class="button button-quiet" type="button" data-close-flood-dialog>ยกเลิก</button>
         <button class="button button-primary button-large" type="submit">▣ บันทึกสถานการณ์</button>
@@ -62,6 +83,7 @@ const pinDialogMarkup = `
 let pinDialog;
 let pinForm;
 let locationRequestId = 0;
+let reportSubmissionPending = false;
 const currentLocationButtonLabel = '⌖ ใช้ตำแหน่งปัจจุบันของฉัน';
 
 function showFloodFormAlert(options) {
@@ -78,12 +100,85 @@ function floodLegend() {
 }
 
 function safeMediaUrl(value) {
+  const mediaValue = String(value || '').trim();
   try {
-    const url = new URL(value);
+    const url = new URL(mediaValue);
     return url.protocol === 'https:' || url.protocol === 'http:' ? url.href : '';
   } catch {
-    return '';
+    if (!/^reports\/[A-Za-z0-9._/-]+$/.test(mediaValue)
+      || mediaValue.split('/').some((part) => !part || part === '.' || part === '..')) return '';
+    try {
+      const projectUrl = new URL(window.CMB_SUPABASE_CONFIG?.url);
+      if (projectUrl.protocol !== 'https:' || !projectUrl.hostname.endsWith('.supabase.co')) return '';
+      const encodedPath = mediaValue.split('/').map(encodeURIComponent).join('/');
+      return new URL(`/storage/v1/object/public/${FLOOD_MEDIA_BUCKET}/${encodedPath}`, projectUrl).href;
+    } catch {
+      return '';
+    }
   }
+}
+
+function validateMediaInput(input) {
+  input.setCustomValidity('');
+  const file = input.files?.[0];
+  const output = document.getElementById(input.dataset.fileName);
+  if (!file) {
+    output.textContent = input.name === 'imageFile' ? 'ยังไม่ได้เลือกรูปภาพ' : 'ยังไม่ได้เลือกวิดีโอ';
+    return true;
+  }
+
+  const isImage = input.name === 'imageFile';
+  const allowedTypes = isImage ? IMAGE_TYPES : VIDEO_TYPES;
+  const extension = file.name.split('.').pop().toLowerCase();
+  const mimeType = allowedTypes.has(file.type) ? file.type : MIME_BY_EXTENSION[extension];
+  const maxBytes = isImage ? MAX_IMAGE_BYTES : MAX_VIDEO_BYTES;
+  let error = '';
+  if (!allowedTypes.has(mimeType)) error = isImage ? 'ชนิดรูปภาพนี้ไม่รองรับ' : 'ชนิดวิดีโอนี้ไม่รองรับ';
+  else if (file.size > maxBytes) error = `ไฟล์มีขนาดเกิน ${maxBytes / 1024 / 1024} MB`;
+
+  input.setCustomValidity(error);
+  output.textContent = error
+    ? error
+    : `พร้อมแนบ: ${file.name} · ${(file.size / 1024 / 1024).toFixed(1)} MB`;
+  return !error;
+}
+
+async function uploadFloodMedia(file, reportId, kind) {
+  const isImage = kind === 'image';
+  const allowedTypes = isImage ? IMAGE_TYPES : VIDEO_TYPES;
+  const extension = file.name.split('.').pop().toLowerCase();
+  const mimeType = allowedTypes.has(file.type) ? file.type : MIME_BY_EXTENSION[extension];
+  if (!allowedTypes.has(mimeType)) throw new Error('ชนิดไฟล์นี้ไม่รองรับ');
+
+  const client = await getSupabaseClient();
+  if (!client) throw new Error('การแนบไฟล์ต้องเชื่อมต่อ Supabase ก่อน');
+  const uniqueId = typeof crypto.randomUUID === 'function'
+    ? crypto.randomUUID()
+    : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+  const path = `reports/${reportId}/${kind}-${uniqueId}.${EXTENSION_BY_MIME[mimeType]}`;
+  const storage = client.storage.from(FLOOD_MEDIA_BUCKET);
+  const { error } = await storage.upload(path, file, {
+    cacheControl: '3600',
+    contentType: mimeType,
+    upsert: false,
+  });
+  if (error) {
+    const message = /bucket not found/i.test(error.message || '')
+      ? 'ยังไม่พบ Storage bucket กรุณาตั้งค่า flood-report-media ใน Supabase ก่อน'
+      : /row-level security|permission denied/i.test(error.message || '')
+        ? 'Supabase Storage ยังไม่ได้กำหนดสิทธิ์อัปโหลด กรุณารัน migration สำหรับไฟล์แนบ'
+        : error.message || 'โปรดลองอีกครั้ง';
+    throw new Error(`อัปโหลด${isImage ? 'รูปภาพ' : 'วิดีโอ'}ไม่สำเร็จ: ${message}`);
+  }
+  return path;
+}
+
+async function removeUnlinkedFloodMedia(paths) {
+  if (!paths.length) return;
+  const client = await getSupabaseClient();
+  if (!client) throw new Error('Supabase Storage ไม่พร้อมใช้งาน');
+  const { error } = await client.storage.from(FLOOD_MEDIA_BUCKET).remove(paths);
+  if (error) throw error;
 }
 
 function publicReportRow(pin) {
@@ -100,7 +195,7 @@ function publicReportRow(pin) {
       <span>${status.label} · ${escapeHtml(pin.waterLevel || 'ไม่ทราบระดับน้ำ')} · ${pin.verified ? 'เจ้าหน้าที่ตรวจสอบแล้ว' : 'รายงานประชาชน · รอตรวจสอบ'}</span>
       <small>${escapeHtml(pin.details || 'ไม่มีรายละเอียดเพิ่มเติม')} · ${formatTime(pin.createdAt)}</small>
       ${mediaLinks ? `<span class="flood-media-links">${mediaLinks}</span>` : ''}
-      ${fileNames ? `<small>เลือกไฟล์ไว้ในเครื่อง: ${fileNames} · ไม่ได้อัปโหลด</small>` : ''}
+      ${fileNames ? `<small>ไฟล์แนบ: ${fileNames}</small>` : ''}
     </article>`;
 }
 
@@ -124,12 +219,12 @@ export function renderPublicFloodMonitor() {
   return `
     <section class="public-flood-monitor" id="flood-monitor">
       <div class="section-heading section-heading-row">
-        <div><span class="section-kicker">FLOOD MONITOR</span><h2>ติดตามสถานการณ์น้ำท่วม</h2><p>แผนที่ Geoapify · แตะจุดที่ต้องการรายงานเพื่อปักหมุด</p></div>
-        <button class="button button-primary button-pin" data-action="place-pin" data-map-target="public-flood-map">＋ ปักหมุดสถานการณ์</button>
+        <div><span class="section-kicker">FLOOD MONITOR</span><h2><span class="section-heading-icon flood-section-icon" aria-hidden="true">⌖</span>ติดตามสถานการณ์น้ำท่วม</h2><p>ปักหมุดด้วย GPS ค้นหาที่อยู่ กรอกพิกัด หรือแตะแผนที่ (ทางเลือก)</p></div>
+        <button class="button button-primary button-pin" data-action="place-pin">＋ ปักหมุดสถานการณ์</button>
       </div>
       <div class="flood-monitor-card">
         <div class="flood-map-heading"><strong>แผนที่รายงานสถานการณ์</strong><span class="map-demo-tag">${isSupabaseConfigured() ? 'ข้อมูลจากฐานข้อมูล' : 'ข้อมูลตัวอย่าง · ตรวจสอบก่อนใช้งาน'}</span></div>
-        ${mapMarkup('public-flood-map', 'แผนที่ Geoapify แตะตำแหน่งเพื่อบันทึกสถานการณ์')}
+        ${mapMarkup('public-flood-map', 'แผนที่ Geoapify สำหรับดูสถานการณ์และเลือกพิกัดเพิ่มเติม (ไม่บังคับ)')}
         <div class="flood-map-footer"><div class="flood-legend">${floodLegend()}</div><small>🔴 วิกฤต (กะพริบเร็ว) · 🟡 เสี่ยงสูง · 🔵 เฝ้าระวัง · 🟢 ปกติ (กะพริบช้า) · หมุดจากประชาชนรอตรวจสอบ</small></div>
         <div class="flood-public-summary">${FLOOD_STATUSES.map((status) => `
           <div class="flood-count-card ${status.className}"><span class="flood-count-dot"></span><span>${status.label}</span><strong>${counts[status.label]}</strong></div>`).join('')}
@@ -146,7 +241,7 @@ function statusOptions(current) {
 function coordinatesLabel(pin) {
   return Number.isFinite(pin.latitude) && Number.isFinite(pin.longitude)
     ? `${pin.latitude.toFixed(6)}, ${pin.longitude.toFixed(6)}`
-    : 'ไม่มีพิกัดจริง · เลือกจุดบนแผนที่ใหม่';
+    : 'ยังไม่มีพิกัด · ใช้ GPS ค้นหาที่อยู่ หรือกรอกพิกัด';
 }
 
 export function renderFloodMonitor() {
@@ -154,14 +249,14 @@ export function renderFloodMonitor() {
   const sortedPins = [...floodPins].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   const unlocatedCount = floodPins.filter((pin) => !Number.isFinite(pin.latitude) || !Number.isFinite(pin.longitude)).length;
   return `
-    <div class="page-heading"><div><span class="eyebrow">${pages['flood-monitor'].eyebrow}</span><h1>${pages['flood-monitor'].title}</h1><p>${pages['flood-monitor'].description}</p></div><button class="button button-primary" data-action="place-pin" data-map-target="admin-flood-map">＋ เพิ่มจุดสถานการณ์</button></div>
-    <div class="info-banner">แผนที่ Geoapify แสดงพิกัดจริงเมื่อเลือกจุดบนแผนที่ รายงานจากประชาชนจะแสดงเป็น “รอตรวจสอบ” จนกว่าเจ้าหน้าที่จะยืนยัน${unlocatedCount ? ` · มี ${unlocatedCount} รายการจากแผนที่เดิมที่ยังไม่มีพิกัดจริง` : ''}</div>
+    <div class="page-heading"><div><span class="eyebrow">${pages['flood-monitor'].eyebrow}</span><h1>${pages['flood-monitor'].title}</h1><p>${pages['flood-monitor'].description}</p></div><button class="button button-primary" data-action="place-pin">＋ เพิ่มจุดสถานการณ์</button></div>
+    <div class="info-banner">เพิ่มรายงานได้โดยใช้ GPS ค้นหาที่อยู่ กรอกพิกัด หรือแตะแผนที่ รายงานจากประชาชนจะแสดงเป็น “รอตรวจสอบ” จนกว่าเจ้าหน้าที่จะยืนยัน${unlocatedCount ? ` · มี ${unlocatedCount} รายการจากแผนที่เดิมที่ยังไม่มีพิกัดจริง` : ''}</div>
     <section class="flood-admin-counts">${FLOOD_STATUSES.map((status) => `<article class="flood-admin-count ${status.className}"><span>${status.label}</span><strong>${counts[status.label]}</strong><small>จุดรายงาน</small></article>`).join('')}</section>
     <div class="flood-admin-layout">
       <section class="panel flood-admin-map-panel">
-        <div class="panel-head"><div><h2 class="panel-title">Flood Monitor</h2><div class="panel-subtitle">แตะตำแหน่งบนแผนที่เพื่อเพิ่มรายงานใหม่</div></div><span class="map-demo-tag">Geoapify</span></div>
-        ${mapMarkup('admin-flood-map', 'แผนที่ Geoapify สำหรับเจ้าหน้าที่')}
-        <div class="flood-map-footer"><div class="flood-legend">${floodLegend()}</div><small>พิกัดหมุดอ่านจากตำแหน่งที่เลือกบนแผนที่</small></div>
+        <div class="panel-head"><div><h2 class="panel-title">Flood Monitor</h2><div class="panel-subtitle">แผนที่เป็นทางเลือก · ใช้ GPS หรือค้นหาที่อยู่ได้</div></div><span class="map-demo-tag">Geoapify</span></div>
+        ${mapMarkup('admin-flood-map', 'แผนที่ Geoapify สำหรับเจ้าหน้าที่และเลือกพิกัดเพิ่มเติม (ไม่บังคับ)')}
+        <div class="flood-map-footer"><div class="flood-legend">${floodLegend()}</div><small>เลือกพิกัดบนแผนที่ หรือใช้ GPS / ค้นหาที่อยู่</small></div>
       </section>
       <section class="panel">
         <div class="panel-head"><div><h2 class="panel-title">สถานการณ์แยกตามระดับ</h2><div class="panel-subtitle">รวม ${floodPins.length} จุด</div></div></div>
@@ -178,7 +273,7 @@ export function renderFloodMonitor() {
           <td data-label="รายละเอียด">${escapeHtml(pin.details || 'ไม่มีรายละเอียด')}</td>
           <td data-label="การตรวจสอบ"><span class="verification-pill ${pin.verified ? 'is-verified' : ''}">${pin.verified ? 'ตรวจสอบแล้ว' : 'รอตรวจสอบ'}</span></td>
           <td data-label="จัดการ"><div class="record-actions"><button class="button button-outline button-small" data-record-action="edit" data-collection="floodPins" data-record-id="${escapeHtml(pin.id)}">แก้ไข</button><button class="button button-quiet button-small" data-record-action="delete" data-collection="floodPins" data-record-id="${escapeHtml(pin.id)}">ลบ</button></div></td>
-        </tr>`).join('') : '<tr><td colspan="7"><div class="empty-state"><strong>ยังไม่มีหมุดสถานการณ์</strong>แตะบนแผนที่เพื่อเพิ่มรายงาน</div></td></tr>'}</tbody></table></div>
+        </tr>`).join('') : '<tr><td colspan="7"><div class="empty-state"><strong>ยังไม่มีหมุดสถานการณ์</strong>กด “เพิ่มจุดสถานการณ์” แล้วใช้ GPS ค้นหาที่อยู่ กรอกพิกัด หรือแตะแผนที่</div></td></tr>'}</tbody></table></div>
     </section>`;
 }
 
@@ -187,37 +282,19 @@ export function mountFloodReportDialog() {
   pinDialog = document.querySelector('#flood-report-dialog');
   pinForm = document.querySelector('#flood-report-form');
   pinDialog.querySelectorAll('[data-close-flood-dialog]').forEach((button) => {
-    button.addEventListener('click', () => pinDialog.close());
+    button.addEventListener('click', () => {
+      if (!reportSubmissionPending) pinDialog.close();
+    });
+  });
+  pinDialog.addEventListener('cancel', (event) => {
+    if (reportSubmissionPending) event.preventDefault();
   });
   pinForm.querySelectorAll('input[type="file"]').forEach((input) => {
-    input.addEventListener('change', () => {
-      input.setCustomValidity('');
-      const selectedFile = input.files[0];
-      const output = document.getElementById(input.dataset.fileName);
-      if (!selectedFile) {
-        output.textContent = input.name === 'imageFile' ? 'ยังไม่ได้เลือกรูปภาพ' : 'ยังไม่ได้เลือกวิดีโอ';
-        return;
-      }
-      const maxBytes = Number(input.dataset.maxBytes);
-      const allowedTypes = input.name === 'imageFile'
-        ? ['image/jpeg', 'image/png', 'image/gif']
-        : ['video/mp4', 'video/quicktime', 'video/x-msvideo'];
-      if (!allowedTypes.includes(selectedFile.type)) {
-        input.setCustomValidity('ชนิดไฟล์นี้ไม่รองรับ');
-        output.textContent = 'ชนิดไฟล์นี้ไม่รองรับ';
-        return;
-      }
-      if (selectedFile.size > maxBytes) {
-        input.setCustomValidity(`ไฟล์มีขนาดเกิน ${maxBytes / 1024 / 1024} MB`);
-        output.textContent = 'ไฟล์มีขนาดใหญ่เกินกำหนด';
-        return;
-      }
-      output.textContent = `เลือกแล้ว: ${selectedFile.name} · ยังไม่ได้อัปโหลด`;
-    });
+    input.addEventListener('change', () => validateMediaInput(input));
   });
 }
 
-export function openFloodReportDialog({ lat = DEFAULT_MAP_CENTER.lat, lng = DEFAULT_MAP_CENTER.lng, source = 'public' } = {}) {
+export function openFloodReportDialog({ lat, lng, source = 'public' } = {}) {
   if (!pinDialog || !pinForm) mountFloodReportDialog();
   locationRequestId += 1;
   pinForm.reset();
@@ -228,9 +305,11 @@ export function openFloodReportDialog({ lat = DEFAULT_MAP_CENTER.lat, lng = DEFA
     input.setCustomValidity('');
     document.getElementById(input.dataset.fileName).textContent = input.name === 'imageFile' ? 'ยังไม่ได้เลือกรูปภาพ' : 'ยังไม่ได้เลือกวิดีโอ';
   });
+  pinForm.querySelector('#flood-upload-status').hidden = true;
+  pinForm.querySelector('#flood-upload-status').textContent = '';
   pinForm.dataset.source = source;
-  pinForm.elements.latitude.value = Number(lat).toFixed(6);
-  pinForm.elements.longitude.value = Number(lng).toFixed(6);
+  pinForm.elements.latitude.value = Number.isFinite(lat) ? Number(lat).toFixed(6) : '';
+  pinForm.elements.longitude.value = Number.isFinite(lng) ? Number(lng).toFixed(6) : '';
   pinDialog.showModal();
   window.requestAnimationFrame(() => pinForm.elements.village.focus({ preventScroll: true }));
 }
@@ -340,7 +419,10 @@ export function bindFloodReportForm(onSaved, onCoordinatesFound) {
 
   pinForm.addEventListener('submit', async (event) => {
     event.preventDefault();
-    if (!pinForm.reportValidity()) return;
+    const fileInputs = [...pinForm.querySelectorAll('input[type="file"]')];
+    const filesValid = fileInputs.every(validateMediaInput);
+    const formValid = pinForm.reportValidity();
+    if (!filesValid || !formValid) return;
 
     const formData = new FormData(pinForm);
     const latitude = Number(formData.get('latitude'));
@@ -360,12 +442,21 @@ export function bindFloodReportForm(onSaved, onCoordinatesFound) {
     const videoFile = pinForm.elements.videoFile.files[0];
     const rawImageUrl = String(formData.get('imageUrl')).trim();
     const rawVideoUrl = String(formData.get('videoUrl')).trim();
+    if ((imageFile && rawImageUrl) || (videoFile && rawVideoUrl)) {
+      showFloodFormAlert({ icon: 'warning', title: 'เลือกไฟล์หรือ URL อย่างใดอย่างหนึ่ง', text: 'แนบไฟล์หรือกรอก URL สำหรับสื่อแต่ละประเภท ไม่ต้องใส่ทั้งสองแบบพร้อมกัน', confirmButtonText: 'ตรวจสอบอีกครั้ง' });
+      return;
+    }
     if ((rawImageUrl && !safeMediaUrl(rawImageUrl)) || (rawVideoUrl && !safeMediaUrl(rawVideoUrl))) {
       showFloodFormAlert({ icon: 'error', title: 'URL สื่อไม่ถูกต้อง', text: 'ใช้ URL ที่ขึ้นต้นด้วย http:// หรือ https:// เท่านั้น', confirmButtonText: 'ตรวจสอบอีกครั้ง' });
       return;
     }
+    if ((imageFile || videoFile) && !isSupabaseConfigured()) {
+      showFloodFormAlert({ icon: 'warning', title: 'ยังไม่ได้ตั้งค่าที่เก็บไฟล์', text: 'การแนบรูปภาพหรือวิดีโอต้องเชื่อมต่อ Supabase และสร้าง Storage bucket ก่อน', confirmButtonText: 'รับทราบ' });
+      return;
+    }
+    const reportId = `FM-${typeof crypto.randomUUID === 'function' ? crypto.randomUUID().slice(0, 8) : Date.now().toString(36)}`;
     const pin = {
-      id: `FM-${typeof crypto.randomUUID === 'function' ? crypto.randomUUID().slice(0, 8) : Date.now().toString(36)}`,
+      id: reportId,
       area,
       village,
       moo,
@@ -384,13 +475,50 @@ export function bindFloodReportForm(onSaved, onCoordinatesFound) {
       createdAt: new Date().toISOString(),
     };
 
+    const uploadedPaths = [];
+    const submitButton = pinForm.querySelector('button[type="submit"]');
+    const uploadStatus = pinForm.querySelector('#flood-upload-status');
+    const closeButtons = [...pinForm.querySelectorAll('[data-close-flood-dialog]')];
+    reportSubmissionPending = true;
+    submitButton.disabled = true;
+    closeButtons.forEach((button) => { button.disabled = true; });
+    if (imageFile || videoFile) {
+      uploadStatus.hidden = false;
+      uploadStatus.textContent = 'กำลังอัปโหลดไฟล์และบันทึกรายงาน...';
+      submitButton.textContent = 'กำลังอัปโหลด...';
+    }
     try {
+      if (imageFile) {
+        pin.imageUrl = await uploadFloodMedia(imageFile, reportId, 'image');
+        uploadedPaths.push(pin.imageUrl);
+      }
+      if (videoFile) {
+        pin.videoUrl = await uploadFloodMedia(videoFile, reportId, 'video');
+        uploadedPaths.push(pin.videoUrl);
+      }
       await createRecord('floodPins', pin);
     } catch (error) {
       console.error('Unable to save flood report:', error);
-      showFloodFormAlert({ icon: 'error', title: 'บันทึกหมุดไม่สำเร็จ', text: error.message || 'โปรดลองอีกครั้ง', confirmButtonText: 'ตกลง' });
+      let cleanupFailed = false;
+      try {
+        await removeUnlinkedFloodMedia(uploadedPaths);
+      } catch (cleanupError) {
+        cleanupFailed = true;
+        console.error('Unable to remove unlinked flood media:', cleanupError);
+      }
+      reportSubmissionPending = false;
+      submitButton.disabled = false;
+      submitButton.textContent = '▣ บันทึกสถานการณ์';
+      closeButtons.forEach((button) => { button.disabled = false; });
+      uploadStatus.hidden = true;
+      const cleanupMessage = cleanupFailed ? ' ไฟล์ชั่วคราวบางส่วนลบไม่สำเร็จ โปรดแจ้งผู้ดูแลระบบ' : '';
+      showFloodFormAlert({ icon: 'error', title: 'บันทึกรายงานไม่สำเร็จ', text: `${error.message || 'โปรดลองอีกครั้ง'}${cleanupMessage}`, confirmButtonText: 'ตรวจสอบอีกครั้ง' });
       return;
     }
+    reportSubmissionPending = false;
+    submitButton.disabled = false;
+    submitButton.textContent = '▣ บันทึกสถานการณ์';
+    closeButtons.forEach((button) => { button.disabled = false; });
     pinDialog.close();
     const refreshed = await onSaved();
     if (refreshed === false) return;
@@ -412,7 +540,7 @@ export function showFloodPinDetails(pinId) {
   const mediaLinks = [
     safeMediaUrl(pin.imageUrl) ? `<p><a href="${escapeHtml(safeMediaUrl(pin.imageUrl))}" target="_blank" rel="noopener noreferrer">เปิดรูปภาพแนบ</a></p>` : '',
     safeMediaUrl(pin.videoUrl) ? `<p><a href="${escapeHtml(safeMediaUrl(pin.videoUrl))}" target="_blank" rel="noopener noreferrer">เปิดวิดีโอแนบ</a></p>` : '',
-    pin.imageName || pin.videoName ? `<p class="swal-note">ชื่อไฟล์: ${escapeHtml([pin.imageName, pin.videoName].filter(Boolean).join(' · '))} · ไฟล์ไม่ได้อัปโหลด</p>` : '',
+    pin.imageName || pin.videoName ? `<p class="swal-note">ไฟล์แนบ: ${escapeHtml([pin.imageName, pin.videoName].filter(Boolean).join(' · '))}</p>` : '',
   ].join('');
   Swal.fire({
     icon: pin.status === 'วิกฤต' ? 'error' : 'info',

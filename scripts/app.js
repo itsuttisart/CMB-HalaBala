@@ -203,23 +203,6 @@ function showStorageError(error) {
   });
 }
 
-function showPlacePinHelp(map) {
-  if (!map) return;
-  if (map.querySelector('.geoapify-map-error')) {
-    openFloodReportDialog({ source: adminApp.hidden ? 'public' : 'admin' });
-    return;
-  }
-  map.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  Swal.fire({
-    toast: true,
-    position: 'top',
-    icon: 'info',
-    title: 'แตะแผนที่เพื่อกำหนดพิกัด',
-    showConfirmButton: false,
-    timer: 2600,
-  });
-}
-
 function updateAdminChrome(profile) {
   const isConnected = isSupabaseConfigured();
   const configError = getSupabaseConfigurationError();
@@ -269,7 +252,7 @@ document.addEventListener('click', (event) => {
   }
   const placePinButton = event.target.closest('[data-action="place-pin"]');
   if (placePinButton) {
-    showPlacePinHelp(document.getElementById(placePinButton.dataset.mapTarget));
+    openFloodReportDialog({ source: adminApp.hidden ? 'public' : 'admin' });
     return;
   }
   const viewButton = event.target.closest('[data-view]');
