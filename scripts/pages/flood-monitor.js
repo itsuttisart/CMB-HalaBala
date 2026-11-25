@@ -246,11 +246,14 @@ function coordinatesLabel(pin) {
 
 export function renderFloodMonitor() {
   const counts = getFloodCounts();
-  const sortedPins = [...floodPins].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  const sortedPins = [...floodPins].sort((a, b) => Number(a.verified) - Number(b.verified)
+    || new Date(b.createdAt) - new Date(a.createdAt));
+  const pendingVerificationCount = sortedPins.filter((pin) => !pin.verified).length;
   const unlocatedCount = floodPins.filter((pin) => !Number.isFinite(pin.latitude) || !Number.isFinite(pin.longitude)).length;
   return `
     <div class="page-heading"><div><span class="eyebrow">${pages['flood-monitor'].eyebrow}</span><h1>${pages['flood-monitor'].title}</h1><p>${pages['flood-monitor'].description}</p></div><button class="button button-primary" data-action="place-pin">＋ เพิ่มจุดสถานการณ์</button></div>
-    <div class="info-banner">เพิ่มรายงานได้โดยใช้ GPS ค้นหาที่อยู่ กรอกพิกัด หรือแตะแผนที่ รายงานจากประชาชนจะแสดงเป็น “รอตรวจสอบ” จนกว่าเจ้าหน้าที่จะยืนยัน${unlocatedCount ? ` · มี ${unlocatedCount} รายการจากแผนที่เดิมที่ยังไม่มีพิกัดจริง` : ''}</div>
+    ${pendingVerificationCount ? `<div class="flood-review-banner" role="status"><span class="flood-review-icon" aria-hidden="true">!</span><div><strong>มีรายงานจากประชาชน ${pendingVerificationCount} จุดรอตรวจสอบ</strong><small>ตรวจสอบรายละเอียด แล้วกด “ยืนยันและเผยแพร่” ในแถวนั้น</small></div><button class="button button-review" data-action="show-pending-flood-reports">ดูรายการแรก ↓</button></div>` : '<div class="flood-review-banner is-clear" role="status"><span class="flood-review-icon" aria-hidden="true">✓</span><div><strong>ไม่มีรายงานรอตรวจสอบ</strong><small>รายงานใหม่จากประชาชนจะแสดงในรายการนี้</small></div></div>'}
+    <div class="info-banner">จัดการรายงานในตารางด้านล่าง · เพิ่มรายงานได้ด้วย GPS ค้นหาที่อยู่ กรอกพิกัด หรือแตะแผนที่${unlocatedCount ? ` · มี ${unlocatedCount} รายการจากแผนที่เดิมที่ยังไม่มีพิกัดจริง` : ''}</div>
     <section class="flood-admin-counts">${FLOOD_STATUSES.map((status) => `<article class="flood-admin-count ${status.className}"><span>${status.label}</span><strong>${counts[status.label]}</strong><small>จุดรายงาน</small></article>`).join('')}</section>
     <div class="flood-admin-layout">
       <section class="panel flood-admin-map-panel">
@@ -264,15 +267,15 @@ export function renderFloodMonitor() {
       </section>
     </div>
     <section class="panel flood-admin-table-panel">
-      <div class="panel-head"><div><h2 class="panel-title">รายงานสถานการณ์ล่าสุด</h2><div class="panel-subtitle">ตรวจสอบข้อมูลและปรับสถานะรายงาน</div></div><span class="panel-subtitle">${sortedPins.length} รายการ</span></div>
-      <div class="table-wrap"><table class="data-table"><thead><tr><th>พื้นที่ / หมายเลข</th><th>พิกัด</th><th>ระดับน้ำ</th><th>สถานะ</th><th>รายละเอียด</th><th>การตรวจสอบ</th><th>จัดการ</th></tr></thead><tbody>${sortedPins.length ? sortedPins.map((pin) => `<tr>
+      <div class="panel-head"><div><h2 class="panel-title">รายงานสถานการณ์ล่าสุด</h2><div class="panel-subtitle">${pendingVerificationCount} จุดรอตรวจสอบ · ${sortedPins.length} รายการทั้งหมด</div></div><span class="panel-subtitle">${sortedPins.length} รายการ</span></div>
+      <div class="table-wrap"><table class="data-table"><thead><tr><th>พื้นที่ / หมายเลข</th><th>พิกัด</th><th>ระดับน้ำ</th><th>สถานะ</th><th>รายละเอียด</th><th>การตรวจสอบ</th><th>จัดการ</th></tr></thead><tbody>${sortedPins.length ? sortedPins.map((pin) => `<tr data-flood-verified="${pin.verified}">
           <td data-label="พื้นที่ / หมายเลข"><div class="table-primary">${escapeHtml(pin.area)}</div><div class="table-secondary">${escapeHtml(pin.id)} · ${formatTime(pin.createdAt)}</div></td>
           <td data-label="พิกัด">${escapeHtml(coordinatesLabel(pin))}</td>
           <td data-label="ระดับน้ำ">${escapeHtml(pin.waterLevel || 'ไม่ระบุ')}</td>
           <td data-label="สถานะ"><select aria-label="เปลี่ยนสถานะ ${escapeHtml(pin.area)}" data-flood-status-id="${escapeHtml(pin.id)}">${statusOptions(pin.status)}</select></td>
           <td data-label="รายละเอียด">${escapeHtml(pin.details || 'ไม่มีรายละเอียด')}</td>
           <td data-label="การตรวจสอบ"><span class="verification-pill ${pin.verified ? 'is-verified' : ''}">${pin.verified ? 'ตรวจสอบแล้ว' : 'รอตรวจสอบ'}</span></td>
-          <td data-label="จัดการ"><div class="record-actions"><button class="button button-outline button-small" data-record-action="edit" data-collection="floodPins" data-record-id="${escapeHtml(pin.id)}">แก้ไข</button><button class="button button-quiet button-small" data-record-action="delete" data-collection="floodPins" data-record-id="${escapeHtml(pin.id)}">ลบ</button></div></td>
+          <td data-label="จัดการ"><div class="record-actions">${pin.verified ? '' : `<button class="button button-verify button-small" data-action="verify-flood-report" data-flood-id="${escapeHtml(pin.id)}">✓ ยืนยันและเผยแพร่</button>`}<button class="button button-outline button-small" data-record-action="edit" data-collection="floodPins" data-record-id="${escapeHtml(pin.id)}">แก้ไข</button><button class="button button-quiet button-small" data-record-action="delete" data-collection="floodPins" data-record-id="${escapeHtml(pin.id)}">ลบ</button></div></td>
         </tr>`).join('') : '<tr><td colspan="7"><div class="empty-state"><strong>ยังไม่มีหมุดสถานการณ์</strong>กด “เพิ่มจุดสถานการณ์” แล้วใช้ GPS ค้นหาที่อยู่ กรอกพิกัด หรือแตะแผนที่</div></td></tr>'}</tbody></table></div>
     </section>`;
 }
@@ -577,4 +580,29 @@ export async function handleFloodPinStatusChange(select, onUpdated) {
   const refreshed = await onUpdated();
   if (refreshed === false) return;
   Swal.fire({ toast: true, position: 'top', icon: 'success', title: 'อัปเดตสถานการณ์แล้ว', showConfirmButton: false, timer: 2200, timerProgressBar: true });
+}
+
+export async function handleFloodReportVerification(pinId, onUpdated) {
+  const pin = floodPins.find((item) => item.id === pinId);
+  if (!pin || pin.verified) return;
+  const result = await Swal.fire({
+    icon: 'question',
+    title: 'ยืนยันและเผยแพร่รายงาน?',
+    text: `${pin.area} จะแสดงบนแผนที่สาธารณะหลังยืนยัน`,
+    showCancelButton: true,
+    confirmButtonText: 'ยืนยันรายงาน',
+    cancelButtonText: 'กลับไปตรวจสอบ',
+    reverseButtons: true,
+  });
+  if (!result.isConfirmed) return;
+  try {
+    await updateRecord('floodPins', pin.id, { verified: true, verifiedAt: new Date().toISOString() });
+  } catch (error) {
+    console.error('Unable to verify flood report:', error);
+    await Swal.fire({ icon: 'error', title: 'ยืนยันรายงานไม่สำเร็จ', text: error.message || 'โปรดลองอีกครั้ง', confirmButtonText: 'รับทราบ' });
+    return;
+  }
+  const refreshed = await onUpdated();
+  if (refreshed === false) return;
+  Swal.fire({ toast: true, position: 'top', icon: 'success', title: 'ยืนยันและเผยแพร่รายงานแล้ว', showConfirmButton: false, timer: 2200, timerProgressBar: true });
 }
