@@ -19,10 +19,14 @@ async function callAdminFunction(body) {
   const { data, error } = await client.functions.invoke('admin-users', { body });
   if (error) {
     let message = error.message;
-    if (error.context && typeof error.context.json === 'function') {
+    if (error.context?.status === 404) {
+      message = 'ไม่พบ Edge Function admin-users ใน Supabase โปรด deploy ฟังก์ชันไปยังโปรเจกต์เดียวกับเว็บไซต์ก่อน';
+    } else if (error.name === 'FunctionsFetchError') {
+      message = 'เชื่อมต่อ Edge Function admin-users ไม่สำเร็จ ตรวจสอบการ deploy, CORS และการเชื่อมต่อเครือข่าย';
+    } else if (error.context && typeof error.context.json === 'function') {
       try {
         const responseBody = await error.context.json();
-        if (responseBody.error) message = responseBody.error;
+        if (responseBody.error || responseBody.message) message = responseBody.error || responseBody.message;
       } catch {
         message = error.message;
       }

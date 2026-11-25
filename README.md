@@ -93,7 +93,11 @@ set role = excluded.role, modules = excluded.modules, is_active = true;
 
 หน้าจัดการบัญชีเรียก Supabase Edge Function ซึ่งตรวจ session และบทบาทผู้ดูแลสูงสุดทุกครั้ง:
 
+หากหน้าแสดง `Failed to send a request to the Edge Function` หรือ `Requested function was not found` ให้ตรวจว่า deploy `admin-users` ไปยัง Supabase project เดียวกับ URL ที่เว็บไซต์ใช้แล้วหรือยัง
+
 ```powershell
+npx supabase login
+npx supabase link --project-ref YOUR_PROJECT_REF
 npx supabase secrets set SUPABASE_SERVICE_ROLE_KEY=YOUR_SERVER_ONLY_SERVICE_ROLE_KEY
 npx supabase functions deploy admin-users
 ```
