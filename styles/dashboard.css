@@ -61,6 +61,7 @@
   font-size: 19px;
 }
 
+.module-card-icon svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .module-icon-amber { color: #a56d20; background: #ffe9c6; }
 .module-icon-blue { color: #4f739c; background: #dfeaf7; }
 .module-icon-purple { color: #79649e; background: #eae2f6; }
@@ -70,6 +71,31 @@
 .module-arrow { margin-left: auto; color: #82988c; font-size: 18px; }
 .module-watermark { position: absolute; z-index: 0; right: 9px; bottom: -19px; color: currentColor; font-size: 68px; font-weight: 600; line-height: 1; opacity: .09; pointer-events: none; transform: rotate(-12deg); }
 
+.pending-review-card {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 18px;
+  padding: 14px 16px;
+  border: 1px solid #f0d7b4;
+  border-radius: 12px;
+  color: #765327;
+  background: linear-gradient(110deg, #fff8eb, #fffdf7);
+  text-align: left;
+  box-shadow: 0 7px 18px #986b2710;
+}
+
+.pending-review-card:hover { border-color: #e4be85; box-shadow: 0 9px 22px #986b2718; }
+.pending-review-card:focus-visible { outline: 3px solid #ddb568; outline-offset: 2px; }
+.pending-review-icon { width: 40px; height: 40px; display: grid; place-items: center; flex: 0 0 auto; border-radius: 12px; color: #a66c1d; background: #ffedc9; }
+.pending-review-icon svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.pending-review-copy { min-width: 0; display: grid; gap: 3px; }
+.pending-review-copy strong { color: #725020; font-size: 14px; font-weight: 600; }
+.pending-review-copy small { color: #927951; font-size: 11px; line-height: 1.5; }
+.pending-review-action { margin-left: auto; flex: 0 0 auto; color: #93631c; font-size: 11px; font-weight: 600; }
+.module-admin { --module-background: linear-gradient(135deg, #eaf3f3, #f8fbfb); --module-border: #d7e6e5; --module-ink: #426d6a; }
+
 @media (min-width: 760px) {
   .dashboard-module-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
 }
@@ -78,6 +104,10 @@
   .dashboard-modules { padding: 17px; }
   .modules-heading { align-items: flex-start; }
   .module-sync { display: none; }
+  .pending-review-card { align-items: flex-start; padding: 12px; }
+  .pending-review-copy strong { font-size: 13px; }
+  .pending-review-copy small { font-size: 10px; }
+  .pending-review-action { align-self: center; font-size: 10px; }
 }
 
 @media (max-width: 480px) {
@@ -86,4 +116,9 @@
   .module-link-card { min-height: 68px; padding: 12px; }
   .module-card-copy strong { font-size: 14px; }
   .module-card-copy small { font-size: 12px; }
+  .pending-review-card { gap: 9px; }
+  .pending-review-icon { width: 34px; height: 34px; }
+  .pending-review-copy strong { font-size: 12px; }
+  .pending-review-copy small { font-size: 9px; }
+  .pending-review-action { font-size: 9px; }
 }
