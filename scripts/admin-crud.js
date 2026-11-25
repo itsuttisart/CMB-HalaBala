@@ -30,7 +30,6 @@ const definitions = {
       { name: 'status', label: 'สถานการณ์', type: 'select', options: ['ปกติ', 'เฝ้าระวัง', 'เสี่ยงสูง', 'วิกฤต'] },
       { name: 'waterLevel', label: 'ระดับน้ำ', type: 'select', options: ['ไม่ทราบ','ปกติ', 'ต่ำกว่าตาตุ่ม', 'ระดับตาตุ่ม–เข่า', 'ระดับเข่า–เอว', 'สูงกว่าระดับเอว'] },
       { name: 'details', label: 'รายละเอียด', type: 'textarea', wide: true },
-      { name: 'verified', label: 'ตรวจสอบโดยเจ้าหน้าที่แล้ว', type: 'checkbox', wide: true },
     ],
   },
   shelters: {
