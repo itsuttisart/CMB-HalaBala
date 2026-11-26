@@ -75,6 +75,9 @@ const collections = {
   },
 };
 
+/**
+ * โหลดข้อมูลชุดหนึ่งสำหรับโหมดตัวอย่างจาก localStorage (ถ้าต่อ Supabase แล้วคืนรายการว่าง)
+ */
 function demoCollection(collection, fallback) {
   if (hasSupabaseConfiguration()) return [];
   let rows = fallback;
@@ -104,6 +107,9 @@ export let supplies = demoCollection('supplies', sampleSupplies);
 export let volunteers = demoCollection('volunteers', initialVolunteerTeams);
 export let announcements = demoCollection('announcements', initialAnnouncements);
 
+/**
+ * กำหนดค่าให้ตัวแปรข้อมูลกลาง (requests, floodPins, shelters, ...) ตามชื่อชุดข้อมูล
+ */
 function assignCollection(name, rows) {
   if (name === 'requests') requests = rows;
   else if (name === 'floodPins') floodPins = rows;
@@ -114,6 +120,9 @@ function assignCollection(name, rows) {
   else throw new Error(`Unknown data collection: ${name}`);
 }
 
+/**
+ * แปลงแถวจากฐานข้อมูล (ชื่อคอลัมน์ snake_case) เป็น object ที่แอปใช้
+ */
 function fromDatabase(name, row) {
   const fields = collections[name].fields;
   return Object.fromEntries(Object.entries(fields)
@@ -121,6 +130,9 @@ function fromDatabase(name, row) {
     .map(([property, column]) => [property, row[column]]));
 }
 
+/**
+ * แปลง object ของแอปเป็นแถวสำหรับบันทึกลงฐานข้อมูล
+ */
 function toDatabase(name, record) {
   const fields = collections[name].fields;
   return Object.fromEntries(Object.entries(fields)
@@ -128,6 +140,9 @@ function toDatabase(name, record) {
     .map(([property, column]) => [column, record[property]]));
 }
 
+/**
+ * ดึงข้อมูลทุกชุดจาก Supabase มาแทนข้อมูลในหน่วยความจำ (เรียกหลังล็อกอินและหลังแก้ไขข้อมูล)
+ */
 export async function refreshRemoteData() {
   if (!hasSupabaseConfiguration()) return;
   const client = await getSupabaseClient();
@@ -144,6 +159,9 @@ export async function refreshRemoteData() {
   results.forEach(([name, rows]) => assignCollection(name, rows));
 }
 
+/**
+ * บันทึกข้อมูลชุดหนึ่งลง localStorage (โหมดตัวอย่าง)
+ */
 function persistDemoCollection(name, rows) {
   try {
     localStorage.setItem(collections[name].storageKey, JSON.stringify(rows));
@@ -153,6 +171,11 @@ function persistDemoCollection(name, rows) {
   }
 }
 
+/**
+ * เพิ่มรายการใหม่ (Supabase หรือ localStorage)
+ * @param {string} name - ชื่อชุดข้อมูล เช่น "shelters"
+ * @param {object} record
+ */
 export async function createRecord(name, record) {
   const definition = collections[name];
   if (!definition) throw new Error(`Unknown data collection: ${name}`);
@@ -168,6 +191,12 @@ export async function createRecord(name, record) {
   return record;
 }
 
+/**
+ * แก้ไขรายการตาม id
+ * @param {string} name
+ * @param {string} id
+ * @param {object} updates - ฟิลด์ที่เปลี่ยน
+ */
 export async function updateRecord(name, id, updates) {
   const definition = collections[name];
   if (!definition) throw new Error(`Unknown data collection: ${name}`);
@@ -192,6 +221,11 @@ export async function updateRecord(name, id, updates) {
   return updated;
 }
 
+/**
+ * ลบรายการตาม id
+ * @param {string} name
+ * @param {string} id
+ */
 export async function deleteRecord(name, id) {
   const definition = collections[name];
   if (!definition) throw new Error(`Unknown data collection: ${name}`);
@@ -212,6 +246,9 @@ export async function deleteRecord(name, id) {
   assignCollection(name, current.filter((record) => record.id !== id));
 }
 
+/**
+ * นับจำนวนหมุดน้ำท่วมแยกตามสถานะ (ข้อมูลที่โหลดอยู่ปัจจุบัน)
+ */
 export function getFloodCounts() {
   return Object.fromEntries(FLOOD_STATUSES.map((status) => [
     status.label,
@@ -219,10 +256,16 @@ export function getFloodCounts() {
   ]));
 }
 
+/**
+ * คืนข้อมูลสถานะน้ำท่วม (สี/คลาส) จากชื่อสถานะ ถ้าไม่พบใช้ "เฝ้าระวัง"
+ */
 export function getFloodStatus(status) {
   return FLOOD_STATUSES.find((item) => item.label === status) || FLOOD_STATUSES[1];
 }
 
+/**
+ * สรุปจำนวนทีมอาสาและจำนวนคนที่พร้อมสนับสนุน (ใช้บนแดชบอร์ด)
+ */
 export function getVolunteerSummary() {
   return {
     teams: volunteers.length,
