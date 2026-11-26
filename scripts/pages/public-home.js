@@ -3,29 +3,86 @@ import { escapeHtml } from '../utils.js';
 import { isSupabaseConfigured } from '../supabase-client.js';
 
 /**
- * สร้าง HTML การ์ดสรุปตัวเลขบนหน้าหลักประชาชน (เคสทั้งหมด/รอ/กำลังดำเนินการ/เสร็จ, อาสาสมัคร, อุปกรณ์)
+ * สร้าง HTML การ์ดสรุปตัวเลขบนหน้าหลักประชาชน
+ * แยกกลุ่มชัดเจน: สรุปการรับเคส · สรุปอาสาสมัคร · สรุปคลังอุปกรณ์
+ * การ์ดมีพื้นหลังสีและลายน้ำ
  */
 export function renderPublicSummary() {
   const summary = getPublicSummary();
   const show = (value) => (summary ? Number(value).toLocaleString('th-TH') : '—');
-  const cards = [
+
+  const caseCards = [
     { tone: 'green', icon: '✚', label: 'เคสที่รับทั้งหมด', value: summary?.requestsTotal, foot: 'คำร้องขอความช่วยเหลือ' },
     { tone: 'orange', icon: '◔', label: 'รอดำเนินการ', value: summary?.pending, foot: 'รอทีมประสานงาน' },
     { tone: 'blue', icon: '➜', label: 'กำลังดำเนินการ', value: summary?.inProgress, foot: 'ทีมกำลังช่วยเหลือ' },
     { tone: 'teal', icon: '✓', label: 'ช่วยเหลือแล้ว', value: summary?.done, foot: 'ดำเนินการเสร็จสิ้น' },
-    { tone: 'violet', icon: '♧', label: 'อาสาสมัคร', value: summary?.volunteersTotal, foot: summary ? `${Number(summary.volunteerTeams).toLocaleString('th-TH')} ทีม` : 'จำนวนคน' },
+  ];
+
+  const volunteerCards = [
+    { tone: 'violet', icon: '♧', label: 'อาสาสมัครทั้งหมด', value: summary?.volunteersTotal, foot: 'จำนวนคน' },
+    { tone: 'indigo', icon: '⬡', label: 'ทีมอาสา', value: summary?.volunteerTeams, foot: 'ทีมที่พร้อมปฏิบัติงาน' },
+  ];
+
+  const supplyCards = [
     { tone: 'sand', icon: '▤', label: 'อุปกรณ์และสิ่งของ', value: summary?.supplyItems, foot: 'รายการในคลัง' },
   ];
+
+  const cardHtml = (card) => `
+    <article class="summary-card summary-${card.tone}">
+      <span class="summary-watermark" aria-hidden="true">${card.icon}</span>
+      <span class="summary-icon" aria-hidden="true">${card.icon}</span>
+      <span class="summary-label">${card.label}</span>
+      <strong class="summary-number">${show(card.value)}</strong>
+      <small>${escapeHtml(card.foot)}</small>
+    </article>`;
+
   return `
     <section class="public-summary" aria-label="สรุปสถานการณ์">
-      <div class="public-summary-head"><div><span class="section-kicker">ภาพรวมการช่วยเหลือ</span><h2>สรุปสถานการณ์ล่าสุด</h2></div><small>${summary ? 'ข้อมูลจากศูนย์ประสานงาน' : 'ยังโหลดตัวเลขสรุปไม่ได้'}</small></div>
-      <div class="public-summary-grid">${cards.map((card) => `
-        <article class="summary-card summary-${card.tone}">
-          <span class="summary-icon" aria-hidden="true">${card.icon}</span>
-          <span class="summary-label">${card.label}</span>
-          <strong class="summary-number">${show(card.value)}</strong>
-          <small>${escapeHtml(card.foot)}</small>
-        </article>`).join('')}
+      <div class="public-summary-head">
+        <div>
+          <span class="section-kicker">ภาพรวมการช่วยเหลือ</span>
+          <h2>สรุปสถานการณ์ล่าสุด</h2>
+        </div>
+        <small>${summary ? 'ข้อมูลจากศูนย์ประสานงาน' : 'ยังโหลดตัวเลขสรุปไม่ได้'}</small>
+      </div>
+
+      <div class="summary-group">
+        <div class="summary-group-head">
+          <span class="summary-group-icon summary-group-cases" aria-hidden="true">✚</span>
+          <div>
+            <h3 class="summary-group-title">สรุปการรับเคส</h3>
+            <p class="summary-group-desc">คำร้องขอความช่วยเหลือและสถานะการดำเนินงาน</p>
+          </div>
+        </div>
+        <div class="public-summary-grid summary-grid-cases">
+          ${caseCards.map(cardHtml).join('')}
+        </div>
+      </div>
+
+      <div class="summary-group">
+        <div class="summary-group-head">
+          <span class="summary-group-icon summary-group-volunteers" aria-hidden="true">♧</span>
+          <div>
+            <h3 class="summary-group-title">สรุปอาสาสมัคร</h3>
+            <p class="summary-group-desc">กำลังคนและทีมที่พร้อมช่วยเหลือ</p>
+          </div>
+        </div>
+        <div class="public-summary-grid summary-grid-volunteers">
+          ${volunteerCards.map(cardHtml).join('')}
+        </div>
+      </div>
+
+      <div class="summary-group">
+        <div class="summary-group-head">
+          <span class="summary-group-icon summary-group-supplies" aria-hidden="true">▤</span>
+          <div>
+            <h3 class="summary-group-title">สรุปคลังอุปกรณ์</h3>
+            <p class="summary-group-desc">สิ่งของและอุปกรณ์ที่พร้อมแจกจ่าย</p>
+          </div>
+        </div>
+        <div class="public-summary-grid summary-grid-supplies">
+          ${supplyCards.map(cardHtml).join('')}
+        </div>
       </div>
     </section>`;
 }
