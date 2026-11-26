@@ -17,6 +17,7 @@
     <link rel="stylesheet" href="styles.css" />
     <link rel="stylesheet" href="styles/dashboard.css" />
     <link rel="stylesheet" href="styles/flood-monitor.css" />
+    <link rel="stylesheet" href="styles/public-layout.css" />
     <script src="geoapify-config.js"></script>
     <script src="supabase-config.js"></script>
     <script src="node_modules/sweetalert2/dist/sweetalert2.all.min.js" defer></script>
@@ -30,6 +31,7 @@
           <span><strong>CMB-HalaBala</strong><small>ศูนย์ประสานงานอุทกภัย</small></span>
         </a>
         <nav class="public-nav" aria-label="เมนูประชาชน">
+          <a href="#home">หน้าแรก</a>
           <a href="#flood-monitor">Flood Monitor</a>
           <a href="#public-announcements">ข่าวประกาศ</a>
           <a href="#help-centers">จุดช่วยเหลือ</a>
@@ -39,6 +41,7 @@
         <button class="button button-outline public-login-button" id="open-login">เข้าสู่ระบบเจ้าหน้าที่ <span aria-hidden="true">→</span></button>
       </header>
       <nav class="public-mobile-nav" aria-label="เมนูหลักสำหรับมือถือ">
+        <a href="#home"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 11 9-8 9 8" /><path d="M5 10v10h14V10" /></svg><small>หน้าแรก</small></a>
         <a href="#flood-monitor"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z" /><circle cx="12" cy="10" r="2.5" /></svg><small>สถานการณ์</small></a>
         <a href="#public-announcements"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6z" /><path d="M14 3v5h5M9 12h7M9 16h7" /></svg><small>ข่าวสาร</small></a>
         <a href="#public-report"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 8v8M8 12h8" /></svg><small>แจ้งเหตุ</small></a>
@@ -46,6 +49,7 @@
       </nav>
 
       <main class="public-main">
+        <div class="public-view public-view-home" data-public-view="home">
         <section class="public-hero">
           <div class="hero-copy">
             <div class="hero-status"><span class="live-dot"></span> ศูนย์ประสานงานช่วยเหลือประชาชน</div>
@@ -68,15 +72,20 @@
           </div>
         </section>
 
+        <div id="public-summary-root"></div>
+        <div id="public-alerts-root"></div>
+
         <section class="quick-strip" aria-label="ข้อมูลช่วยเหลือ">
           <article><span class="quick-icon quick-green">01</span><span><strong>แจ้งเหตุได้ง่าย</strong><small>ระบุพื้นที่และสิ่งที่ต้องการ</small></span></article>
           <article><span class="quick-icon quick-blue">02</span><span><strong>ส่งต่อทีมประสานงาน</strong><small>เจ้าหน้าที่ช่วยตรวจสอบข้อมูล</small></span></article>
           <article><span class="quick-icon quick-orange">03</span><span><strong>ทุกคนเข้าถึงได้</strong><small>ออกแบบมาเพื่อมือถือเป็นหลัก</small></span></article>
         </section>
+        </div>
 
-        <div id="public-flood-monitor-root"></div>
-        <div id="public-announcements-root"></div>
+        <div class="public-view" data-public-view="flood-monitor" hidden><div id="public-flood-monitor-root"></div></div>
+        <div class="public-view" data-public-view="public-announcements" hidden><div id="public-announcements-root"></div></div>
 
+        <div class="public-view" data-public-view="public-report" hidden>
         <section class="public-report-section" id="public-report">
           <div class="section-heading">
             <span class="section-kicker">ขอความช่วยเหลือ</span>
@@ -105,10 +114,14 @@
           </div>
         </section>
 
+        </div>
+
+        <div class="public-view" data-public-view="help-centers" hidden>
         <section class="help-centers" id="help-centers">
           <div class="section-heading section-heading-row"><div><span class="section-kicker">จุดช่วยเหลือ</span><h2><span class="section-heading-icon shelter-section-icon" aria-hidden="true">⌂</span>ศูนย์พักพิงใกล้พื้นที่</h2><p>ข้อมูลตัวอย่าง โปรดโทรตรวจสอบก่อนเดินทาง</p></div><a href="tel:1784" class="text-link">สอบถามสายด่วน 1784 →</a></div>
           <div id="public-shelters-root" class="shelter-cards"></div>
         </section>
+        </div>
       </main>
       <footer class="public-footer"><a class="public-brand footer-brand" href="#" data-view="public"><img class="brand-logo" src="assets/cmb-halabala-logo.png" alt="" /><span><strong>CMB-HalaBala</strong><small>ศูนย์ประสานงานอุทกภัย</small></span></a><span id="public-system-note">ข้อมูลตัวอย่างสำหรับต้นแบบ <span class="footer-dot">•</span> ยังไม่ใช่ช่องทางแจ้งเหตุจริง</span><a href="tel:1784">สายด่วน ปภ. 1784</a></footer>
     </div>
