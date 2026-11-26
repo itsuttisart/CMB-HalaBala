@@ -3,6 +3,9 @@ import { supplies } from '../store.js';
 import { escapeHtml } from '../utils.js';
 import { isSupabaseConfigured } from '../supabase-client.js';
 
+/**
+ * สร้าง HTML หน้าคลังสิ่งของ
+ */
 export function renderSupplies() {
   return `
     <div class="page-heading"><div><span class="eyebrow">${pages.supplies.eyebrow}</span><h1>${pages.supplies.title}</h1><p>${pages.supplies.description}</p></div><button class="button button-primary" data-record-action="create" data-collection="supplies">＋ เพิ่มสิ่งของ</button></div>
