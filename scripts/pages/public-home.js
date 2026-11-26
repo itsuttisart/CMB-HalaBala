@@ -1,15 +1,19 @@
-import { announcements, floodPins, getFloodStatus, getPublicSummary } from '../store.js';
+import { announcements, floodPins, getFloodStatus, getPublicSummary, volunteers, supplies } from '../store.js';
 import { escapeHtml } from '../utils.js';
 import { isSupabaseConfigured } from '../supabase-client.js';
 
+const VOLUNTEER_TONES = ['violet', 'indigo', 'blue', 'teal', 'green', 'orange'];
+const SUPPLY_TONES = ['sand', 'orange', 'teal', 'blue', 'violet', 'indigo'];
+
 /**
  * สร้าง HTML การ์ดสรุปตัวเลขบนหน้าหลักประชาชน
- * แยกกลุ่มชัดเจน: สรุปการรับเคส · สรุปอาสาสมัคร · สรุปคลังอุปกรณ์
- * การ์ดมีพื้นหลังสีและลายน้ำ
+ * แยกกลุ่ม: สรุปการรับเคส · สรุปอาสาสมัคร (แสดงทีมตามที่แอดมินเพิ่ม) · สรุปคลัง (แยกหมวดหมู่)
  */
 export function renderPublicSummary() {
   const summary = getPublicSummary();
-  const show = (value) => (summary ? Number(value).toLocaleString('th-TH') : '—');
+  const show = (value) => (value === null || value === undefined || Number.isNaN(Number(value))
+    ? '—'
+    : Number(value).toLocaleString('th-TH'));
 
   const caseCards = [
     { tone: 'green', icon: '✚', label: 'เคสที่รับทั้งหมด', value: summary?.requestsTotal, foot: 'คำร้องขอความช่วยเหลือ' },
@@ -18,22 +22,16 @@ export function renderPublicSummary() {
     { tone: 'teal', icon: '✓', label: 'ช่วยเหลือแล้ว', value: summary?.done, foot: 'ดำเนินการเสร็จสิ้น' },
   ];
 
-  const volunteerCards = [
-    { tone: 'violet', icon: '♧', label: 'อาสาสมัครทั้งหมด', value: summary?.volunteersTotal, foot: 'จำนวนคน' },
-    { tone: 'indigo', icon: '⬡', label: 'ทีมอาสา', value: summary?.volunteerTeams, foot: 'ทีมที่พร้อมปฏิบัติงาน' },
-  ];
-
-  const supplyCards = [
-    { tone: 'sand', icon: '▤', label: 'อุปกรณ์และสิ่งของ', value: summary?.supplyItems, foot: 'รายการในคลัง' },
-  ];
+  const volunteerCards = buildVolunteerCards(summary, show);
+  const supplyCards = buildSupplyCards(summary, show);
 
   const cardHtml = (card) => `
-    <article class="summary-card summary-${card.tone}">
+    <article class="summary-card summary-${card.tone}${card.wide ? ' summary-card-wide' : ''}">
       <span class="summary-watermark" aria-hidden="true">${card.icon}</span>
       <span class="summary-icon" aria-hidden="true">${card.icon}</span>
-      <span class="summary-label">${card.label}</span>
-      <strong class="summary-number">${show(card.value)}</strong>
-      <small>${escapeHtml(card.foot)}</small>
+      <span class="summary-label">${escapeHtml(card.label)}</span>
+      <strong class="summary-number">${card.display ?? show(card.value)}</strong>
+      <small>${escapeHtml(card.foot || '')}</small>
     </article>`;
 
   return `
@@ -64,10 +62,12 @@ export function renderPublicSummary() {
           <span class="summary-group-icon summary-group-volunteers" aria-hidden="true">♧</span>
           <div>
             <h3 class="summary-group-title">สรุปอาสาสมัคร</h3>
-            <p class="summary-group-desc">กำลังคนและทีมที่พร้อมช่วยเหลือ</p>
+            <p class="summary-group-desc">${volunteers.length
+              ? `แสดง ${volunteers.length} ทีมตามที่ศูนย์บันทึกไว้`
+              : 'กำลังคนและทีมที่พร้อมช่วยเหลือ'}</p>
           </div>
         </div>
-        <div class="public-summary-grid summary-grid-volunteers">
+        <div class="public-summary-grid summary-grid-volunteers${volunteers.length ? ' summary-grid-teams' : ''}">
           ${volunteerCards.map(cardHtml).join('')}
         </div>
       </div>
@@ -77,14 +77,76 @@ export function renderPublicSummary() {
           <span class="summary-group-icon summary-group-supplies" aria-hidden="true">▤</span>
           <div>
             <h3 class="summary-group-title">สรุปคลังอุปกรณ์</h3>
-            <p class="summary-group-desc">สิ่งของและอุปกรณ์ที่พร้อมแจกจ่าย</p>
+            <p class="summary-group-desc">${supplies.length
+              ? 'แยกตามหมวดหมู่จากคลังที่แอดมินบันทึก'
+              : 'สิ่งของและอุปกรณ์ที่พร้อมแจกจ่าย'}</p>
           </div>
         </div>
-        <div class="public-summary-grid summary-grid-supplies">
+        <div class="public-summary-grid summary-grid-supplies${supplies.length ? ' summary-grid-categories' : ''}">
           ${supplyCards.map(cardHtml).join('')}
         </div>
       </div>
     </section>`;
+}
+
+/**
+ * การ์ดอาสาสมัคร: ถ้ามีรายชื่อทีมจากแอดมิน แสดงทีมละใบ + สรุปรวม
+ * ถ้าไม่มีรายละเอียด (เช่น RLS บล็อก) ใช้ตัวเลขรวมจาก summary
+ */
+function buildVolunteerCards(summary, show) {
+  if (volunteers.length) {
+    const totalPeople = volunteers.reduce((sum, team) => sum + Number(team.headcount || 0), 0);
+    const overview = [
+      { tone: 'violet', icon: '♧', label: 'อาสาสมัครทั้งหมด', value: totalPeople, foot: `${volunteers.length} ทีม` },
+    ];
+    const teamCards = volunteers.map((team, index) => ({
+      tone: VOLUNTEER_TONES[index % VOLUNTEER_TONES.length],
+      icon: '⬡',
+      label: team.name || 'ทีมไม่ระบุชื่อ',
+      value: team.headcount,
+      foot: [team.status, team.mission].filter(Boolean).join(' · ') || 'ทีมอาสา',
+    }));
+    return [...overview, ...teamCards];
+  }
+
+  return [
+    { tone: 'violet', icon: '♧', label: 'อาสาสมัครทั้งหมด', value: summary?.volunteersTotal, foot: 'จำนวนคน' },
+    { tone: 'indigo', icon: '⬡', label: 'ทีมอาสา', value: summary?.volunteerTeams, foot: 'ทีมที่พร้อมปฏิบัติงาน' },
+  ];
+}
+
+/**
+ * การ์ดคลัง: แยกตามหมวดหมู่ (category) จากรายการที่แอดมินเพิ่ม
+ * ถ้าไม่มีรายละเอียด ใช้ตัวเลขรวมรายการ
+ */
+function buildSupplyCards(summary, show) {
+  if (supplies.length) {
+    const byCategory = new Map();
+    supplies.forEach((item) => {
+      const key = (item.category || 'อื่น ๆ').trim() || 'อื่น ๆ';
+      const current = byCategory.get(key) || { items: 0, amountHint: [] };
+      current.items += 1;
+      if (item.name) current.amountHint.push(`${item.name} ${item.amount || ''} ${item.unit || ''}`.trim());
+      byCategory.set(key, current);
+    });
+
+    const categoryCards = [...byCategory.entries()].map(([category, info], index) => ({
+      tone: SUPPLY_TONES[index % SUPPLY_TONES.length],
+      icon: '▤',
+      label: category,
+      value: info.items,
+      foot: info.amountHint.slice(0, 2).join(' · ') || `${info.items} รายการ`,
+    }));
+
+    return [
+      { tone: 'sand', icon: '▤', label: 'รายการทั้งหมดในคลัง', value: supplies.length, foot: `${byCategory.size} หมวดหมู่` },
+      ...categoryCards,
+    ];
+  }
+
+  return [
+    { tone: 'sand', icon: '▤', label: 'อุปกรณ์และสิ่งของ', value: summary?.supplyItems, foot: 'รายการในคลัง' },
+  ];
 }
 
 /**
