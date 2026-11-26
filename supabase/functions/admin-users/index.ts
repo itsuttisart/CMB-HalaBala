@@ -16,6 +16,11 @@ const allowedModules = new Set([
   'announcements',
 ]);
 
+/**
+ * ส่งคำตอบ JSON พร้อม CORS header
+ * @param {number} status
+ * @param {object} body
+ */
 function respond(status: number, body: Record<string, unknown>) {
   return new Response(JSON.stringify(body), {
     status,
@@ -23,12 +28,18 @@ function respond(status: number, body: Record<string, unknown>) {
   });
 }
 
+/**
+ * ตรวจว่า modules เป็นรายการเมนูที่อนุญาตและไม่ว่าง
+ */
 function validateModules(value: unknown): value is string[] {
   return Array.isArray(value)
     && value.length > 0
     && value.every((module) => typeof module === 'string' && allowedModules.has(module));
 }
 
+/**
+ * ตัวรับคำขอหลัก: ตรวจ token → ตรวจว่าเป็น superadmin → ทำตาม action (list/create/update/delete)
+ */
 Deno.serve(async (request) => {
   if (request.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   if (request.method !== 'POST') return respond(405, { error: 'Method not allowed' });
