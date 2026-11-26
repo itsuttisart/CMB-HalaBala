@@ -3,6 +3,9 @@ import { shelters } from '../store.js';
 import { escapeHtml } from '../utils.js';
 import { isSupabaseConfigured } from '../supabase-client.js';
 
+/**
+ * สร้าง HTML หน้าศูนย์พักพิง (เจ้าหน้าที่)
+ */
 export function renderShelters() {
   return `
     <div class="page-heading"><div><span class="eyebrow">${pages.shelters.eyebrow}</span><h1>${pages.shelters.title}</h1><p>${pages.shelters.description}</p></div><button class="button button-primary" data-record-action="create" data-collection="shelters">＋ เพิ่มศูนย์พักพิง</button></div>
@@ -15,6 +18,9 @@ export function renderShelters() {
       </article>`).join('')}</div>`;
 }
 
+/**
+ * สร้าง HTML ศูนย์พักพิงที่เปิดและเผยแพร่แล้ว (หน้าสาธารณะ)
+ */
 export function renderPublicShelters() {
       const publishedShelters = shelters.filter((shelter) => shelter.isActive !== false && shelter.isPublished !== false);
       return `${publishedShelters.map((shelter) => `
