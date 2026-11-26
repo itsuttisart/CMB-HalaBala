@@ -86,19 +86,31 @@ let locationRequestId = 0;
 let reportSubmissionPending = false;
 const currentLocationButtonLabel = '⌖ ใช้ตำแหน่งปัจจุบันของฉัน';
 
+/**
+ * แสดง popup ภายในกล่องรายงานน้ำท่วม (ให้ popup อยู่เหนือ dialog)
+ */
 function showFloodFormAlert(options) {
   return Swal.fire({ target: pinDialog, ...options });
 }
 
+/**
+ * สร้างกล่องแผนที่ของหน้าน้ำท่วม (id = public-flood-map หรือ admin-flood-map)
+ */
 function mapMarkup(id, label) {
   const publicMap = id === 'public-flood-map';
   return `<div class="geoapify-flood-map" id="${id}" data-flood-map data-map-public="${publicMap}" data-map-interactive="true" data-map-zoom="12" aria-label="${label}"><div class="geoapify-map-canvas"></div></div>`;
 }
 
+/**
+ * สร้าง HTML คำอธิบายสีของสถานะน้ำท่วม
+ */
 function floodLegend() {
   return FLOOD_STATUSES.map((status) => `<span class="flood-legend-item"><i class="${status.className}"></i>${status.label}</span>`).join('');
 }
 
+/**
+ * ตรวจลิงก์รูป/วิดีโอให้ปลอดภัย (http/https หรือ path ใน storage) คืน "" ถ้าไม่ปลอดภัย
+ */
 function safeMediaUrl(value) {
   const mediaValue = String(value || '').trim();
   try {
@@ -118,6 +130,10 @@ function safeMediaUrl(value) {
   }
 }
 
+/**
+ * ตรวจชนิดและขนาดไฟล์รูป/วิดีโอที่เลือก และแสดงชื่อไฟล์
+ * @param {HTMLInputElement} input
+ */
 function validateMediaInput(input) {
   input.setCustomValidity('');
   const file = input.files?.[0];
@@ -143,6 +159,13 @@ function validateMediaInput(input) {
   return !error;
 }
 
+/**
+ * อัปโหลดรูป/วิดีโอรายงานไป Supabase Storage
+ * @param {File} file
+ * @param {string} reportId
+ * @param {"image"|"video"} kind
+ * @returns {Promise<string>} path ของไฟล์ใน storage
+ */
 async function uploadFloodMedia(file, reportId, kind) {
   const isImage = kind === 'image';
   const allowedTypes = isImage ? IMAGE_TYPES : VIDEO_TYPES;
@@ -173,6 +196,10 @@ async function uploadFloodMedia(file, reportId, kind) {
   return path;
 }
 
+/**
+ * ลบไฟล์ที่อัปโหลดแล้วแต่บันทึกรายงานไม่สำเร็จ
+ * @param {string[]} paths
+ */
 async function removeUnlinkedFloodMedia(paths) {
   if (!paths.length) return;
   const client = await getSupabaseClient();
@@ -181,6 +208,9 @@ async function removeUnlinkedFloodMedia(paths) {
   if (error) throw error;
 }
 
+/**
+ * สร้าง HTML แถวรายงานในตารางสาธารณะ
+ */
 function publicReportRow(pin) {
   const status = getFloodStatus(pin.status);
   const location = [pin.village || pin.area, pin.moo ? `หมู่ ${pin.moo}` : '', pin.subdistrict ? `ต.${pin.subdistrict}` : '', pin.district ? `อ.${pin.district}` : ''].filter(Boolean).join(' · ');
@@ -199,6 +229,9 @@ function publicReportRow(pin) {
     </article>`;
 }
 
+/**
+ * สร้าง HTML ส่วนอัปเดตสถานการณ์น้ำท่วมของหน้าสาธารณะ (แผนที่ + รายงานที่ยืนยันแล้ว)
+ */
 export function renderPublicFloodMonitor() {
   const publicPins = isSupabaseConfigured() ? floodPins.filter((pin) => pin.verified) : floodPins;
   const counts = Object.fromEntries(FLOOD_STATUSES.map((status) => [
@@ -234,16 +267,25 @@ export function renderPublicFloodMonitor() {
     </section>`;
 }
 
+/**
+ * สร้างตัวเลือกสถานะน้ำท่วม (<option>) โดยเลือกสถานะปัจจุบัน
+ */
 function statusOptions(current) {
   return FLOOD_STATUSES.map((status) => `<option ${current === status.label ? 'selected' : ''}>${status.label}</option>`).join('');
 }
 
+/**
+ * แปลงพิกัดของหมุดเป็นข้อความ "lat, lng"
+ */
 function coordinatesLabel(pin) {
   return Number.isFinite(pin.latitude) && Number.isFinite(pin.longitude)
     ? `${pin.latitude.toFixed(6)}, ${pin.longitude.toFixed(6)}`
     : 'ยังไม่มีพิกัด · ใช้ GPS ค้นหาที่อยู่ หรือกรอกพิกัด';
 }
 
+/**
+ * สร้าง HTML หน้าอัปเดตสถานการณ์น้ำท่วมของเจ้าหน้าที่ (รายงานรอตรวจสอบอยู่ด้านบน)
+ */
 export function renderFloodMonitor() {
   const counts = getFloodCounts();
   const sortedPins = [...floodPins].sort((a, b) => Number(a.verified) - Number(b.verified)
@@ -280,6 +322,9 @@ export function renderFloodMonitor() {
     </section>`;
 }
 
+/**
+ * สร้างกล่องฟอร์มรายงานน้ำท่วมใน body (เรียกครั้งเดียวตอนเริ่มแอป)
+ */
 export function mountFloodReportDialog() {
   if (!document.querySelector('#flood-report-dialog')) document.body.insertAdjacentHTML('beforeend', pinDialogMarkup);
   pinDialog = document.querySelector('#flood-report-dialog');
@@ -297,6 +342,10 @@ export function mountFloodReportDialog() {
   });
 }
 
+/**
+ * เปิดกล่องรายงานน้ำท่วม ล้างฟอร์ม และใส่พิกัดถ้ามี
+ * @param {{lat?:number,lng?:number,source?:"public"|"admin"}} options
+ */
 export function openFloodReportDialog({ lat, lng, source = 'public' } = {}) {
   if (!pinDialog || !pinForm) mountFloodReportDialog();
   locationRequestId += 1;
@@ -317,6 +366,11 @@ export function openFloodReportDialog({ lat, lng, source = 'public' } = {}) {
   window.requestAnimationFrame(() => pinForm.elements.village.focus({ preventScroll: true }));
 }
 
+/**
+ * ผูกปุ่มในกล่องรายงาน: ใช้ตำแหน่ง GPS, ค้นหาที่อยู่ และส่งรายงาน (อัปโหลดสื่อ + บันทึก)
+ * @param {Function} onSaved - เรียกหลังบันทึกสำเร็จ
+ * @param {Function} onCoordinatesFound - เรียกเมื่อได้พิกัดเพื่อเลื่อนแผนที่
+ */
 export function bindFloodReportForm(onSaved, onCoordinatesFound) {
   if (!pinForm) mountFloodReportDialog();
   pinForm.querySelector('[data-current-location]').addEventListener('click', (event) => {
@@ -536,6 +590,10 @@ export function bindFloodReportForm(onSaved, onCoordinatesFound) {
   });
 }
 
+/**
+ * แสดง popup รายละเอียดหมุดน้ำท่วม (ตอนคลิกหมุด)
+ * @param {string} pinId
+ */
 export function showFloodPinDetails(pinId) {
   const pin = floodPins.find((item) => item.id === pinId);
   if (!pin) return;
@@ -553,6 +611,11 @@ export function showFloodPinDetails(pinId) {
   });
 }
 
+/**
+ * เปลี่ยนสถานะหมุดน้ำท่วมหลังเจ้าหน้าที่ยืนยัน
+ * @param {HTMLSelectElement} select
+ * @param {Function} onUpdated
+ */
 export async function handleFloodPinStatusChange(select, onUpdated) {
   const pin = floodPins.find((item) => item.id === select.dataset.floodStatusId);
   if (!pin) return;
@@ -582,6 +645,11 @@ export async function handleFloodPinStatusChange(select, onUpdated) {
   Swal.fire({ toast: true, position: 'top', icon: 'success', title: 'อัปเดตสถานการณ์แล้ว', showConfirmButton: false, timer: 2200, timerProgressBar: true });
 }
 
+/**
+ * ยืนยันและเผยแพร่รายงานรอตรวจสอบ ให้แสดงบนแผนที่สาธารณะ
+ * @param {string} pinId
+ * @param {Function} onUpdated
+ */
 export async function handleFloodReportVerification(pinId, onUpdated) {
   const pin = floodPins.find((item) => item.id === pinId);
   if (!pin || pin.verified) return;
