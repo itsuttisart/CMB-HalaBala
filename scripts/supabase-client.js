@@ -1,9 +1,16 @@
 const configuration = window.CMB_SUPABASE_CONFIG || {};
 
+/**
+ * ตรวจว่ามีการกรอกค่า url หรือ anonKey ใน supabase-config.js หรือไม่ (false = โหมดตัวอย่าง)
+ */
 export function hasSupabaseConfiguration() {
   return Boolean(configuration.url || configuration.anonKey);
 }
 
+/**
+ * ตรวจความถูกต้องของค่าตั้งค่า Supabase
+ * @returns {string} ข้อความ error ภาษาไทย หรือ "" ถ้าถูกต้อง
+ */
 export function getSupabaseConfigurationError() {
   if (!hasSupabaseConfiguration()) return '';
   try {
@@ -22,12 +29,19 @@ export function getSupabaseConfigurationError() {
   }
 }
 
+/**
+ * คืน true เมื่อตั้งค่า Supabase ครบและถูกต้อง พร้อมใช้งานจริง
+ */
 export function isSupabaseConfigured() {
   return hasSupabaseConfiguration() && !getSupabaseConfigurationError();
 }
 
 let clientPromise;
 
+/**
+ * โหลดไลบรารี supabase-js (เฉพาะครั้งแรก) แล้วสร้าง client ใช้ร่วมกันทั้งแอป
+ * @returns {Promise<object|null>} null เมื่อไม่ได้ตั้งค่า Supabase
+ */
 export function getSupabaseClient() {
   if (!hasSupabaseConfiguration()) return Promise.resolve(null);
   const configurationError = getSupabaseConfigurationError();
@@ -57,6 +71,11 @@ export function getSupabaseClient() {
   return clientPromise;
 }
 
+/**
+ * ดึงโปรไฟล์เจ้าหน้าที่ (role, เมนูที่ดูแล) จากตาราง admin_profiles
+ * @param {string} userId - auth user id
+ * @throws ถ้าไม่มีสิทธิ์หรือบัญชีถูกระงับ
+ */
 export async function fetchAdminProfile(userId) {
   const client = await getSupabaseClient();
   if (!client) throw new Error('Supabase is not configured.');
