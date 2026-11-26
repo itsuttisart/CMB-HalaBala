@@ -3,10 +3,16 @@ import { floodPins, getFloodCounts, shelters } from '../store.js';
 import { escapeHtml } from '../utils.js';
 import { isSupabaseConfigured } from '../supabase-client.js';
 
+/**
+ * สร้างกล่องแผนที่ (ให้ geoapify-map.js มาวาดแผนที่จริง)
+ */
 function mapMarkup(id, label, interactive = true, zoom = 12) {
   return `<div class="geoapify-flood-map" id="${id}" data-flood-map data-map-interactive="${interactive}" data-map-zoom="${zoom}" aria-label="${label}"><div class="geoapify-map-canvas"></div></div>`;
 }
 
+/**
+ * สร้าง HTML หน้าแผนที่สถานการณ์
+ */
 export function renderMap() {
   const counts = getFloodCounts();
   const activeLocations = counts['เฝ้าระวัง'] + counts['เสี่ยงสูง'] + counts['วิกฤต'];
