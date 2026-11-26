@@ -11,6 +11,9 @@ if (missingVariables.length) {
   throw new Error(`Missing deployment configuration: ${missingVariables.join(', ')}`);
 }
 
+/**
+ * หา URL เว็บไซต์ (SITE_URL หรือจาก GITHUB_REPOSITORY) ใช้ใส่ canonical/sitemap ตอน build
+ */
 function getSiteUrl() {
   if (process.env.SITE_URL) return new URL(process.env.SITE_URL);
 
