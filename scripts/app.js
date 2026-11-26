@@ -1,6 +1,7 @@
 import { pages } from './data.js';
 import { createRecord, floodPins, getFloodCounts, refreshRemoteData, requests, updateRecord } from './store.js';
 import { initNetworkStatus, saveRequestResilient } from './offline-queue.js';
+import { startRealtimeSync } from './realtime.js';
 import { getSupabaseClient, fetchAdminProfile, getSupabaseConfigurationError, hasSupabaseConfiguration, isSupabaseConfigured } from './supabase-client.js';
 import { focusGeoapifyMap, syncGeoapifyMaps } from './geoapify-map.js';
 import { mountAdminCrudDialog } from './admin-crud.js';
@@ -600,6 +601,8 @@ async function initializeApp() {
       }
     }
     await refreshPublicViews();
+    // ซิงค์ข้อมูลแบบ Realtime เมื่อตารางหลักมีการเพิ่ม/แก้/ลบ
+    void startRealtimeSync(() => refreshPublicViews().catch(showStorageError));
   } catch (error) {
     console.error('Unable to initialize Supabase:', error);
     syncFloodMaps();
