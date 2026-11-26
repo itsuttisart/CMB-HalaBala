@@ -7,11 +7,17 @@ const mapInstances = new Map();
 const pendingMaps = new WeakSet();
 let leafletPromise;
 
+/**
+ * อ่าน Geoapify API key จาก geoapify-config.js (คืน "" ถ้ายังไม่ตั้งค่า)
+ */
 function getGeoapifyApiKey() {
   const apiKey = window.CMB_GEOAPIFY_CONFIG?.apiKey;
   return typeof apiKey === 'string' && apiKey.length > 0 && !apiKey.includes('YOUR_') ? apiKey : '';
 }
 
+/**
+ * โหลดไลบรารี Leaflet (เฉพาะครั้งแรก) คืน Promise ของ window.L
+ */
 function loadLeaflet() {
   if (window.L) return Promise.resolve(window.L);
   if (leafletPromise) return leafletPromise;
@@ -32,17 +38,26 @@ function loadLeaflet() {
   return leafletPromise;
 }
 
+/**
+ * ตรวจว่าพิกัดของหมุดอยู่ในช่วง lat/lng ที่ถูกต้อง
+ */
 function isValidLocation(pin) {
   return Number.isFinite(pin.latitude) && pin.latitude >= -90 && pin.latitude <= 90
     && Number.isFinite(pin.longitude) && pin.longitude >= -180 && pin.longitude <= 180;
 }
 
+/**
+ * เลือกหมุดที่จะแสดง: แผนที่สาธารณะแสดงเฉพาะรายงานที่ยืนยันแล้ว แผนที่เจ้าหน้าที่แสดงทั้งหมด
+ */
 function pinsForMap(element) {
   return element.dataset.mapPublic === 'true' && isSupabaseConfigured()
     ? floodPins.filter((pin) => pin.verified)
     : floodPins;
 }
 
+/**
+ * แสดงกล่องข้อความเมื่อโหลดแผนที่ไม่สำเร็จ
+ */
 function showMapError(canvas, message) {
   if (canvas.querySelector('.geoapify-map-error')) return;
   const errorPanel = document.createElement('div');
@@ -55,6 +70,9 @@ function showMapError(canvas, message) {
   canvas.append(errorPanel);
 }
 
+/**
+ * สร้างไอคอนหมุดตามสีของสถานะน้ำท่วม
+ */
 function createMarkerIcon(L, status) {
   return L.divIcon({
     className: 'flood-marker-icon',
@@ -64,10 +82,16 @@ function createMarkerIcon(L, status) {
   });
 }
 
+/**
+ * ล้างหมุดทั้งหมดบนแผนที่
+ */
 function clearMarkers(instance) {
   instance.markers.clearLayers();
 }
 
+/**
+ * วาดหมุดน้ำท่วมบนแผนที่ใหม่ทั้งหมด และผูกการคลิกหมุดเพื่อดูรายละเอียด
+ */
 function renderMarkers(instance, pins, onPinClick) {
   clearMarkers(instance);
   pins.filter(isValidLocation).forEach((pin) => {
@@ -83,6 +107,9 @@ function renderMarkers(instance, pins, onPinClick) {
   });
 }
 
+/**
+ * สร้างแผนที่ Leaflet + Geoapify ในองค์ประกอบที่กำหนด และผูกการแตะแผนที่เพื่อปักหมุดรายงาน
+ */
 async function createMap(element, onMapPick, onPinClick) {
   const canvas = element.querySelector('.geoapify-map-canvas');
   if (!canvas) return;
@@ -130,11 +157,17 @@ async function createMap(element, onMapPick, onPinClick) {
   }
 }
 
+/**
+ * ทำลายแผนที่เมื่อองค์ประกอบถูกถอดออกจากหน้า
+ */
 function removeMap(instance) {
   clearMarkers(instance);
   instance.map.remove();
 }
 
+/**
+ * ซิงก์แผนที่กับหน้าปัจจุบัน: สร้างแผนที่ใหม่ ลบอันที่หายไป และอัปเดตหมุด (เรียกทุกครั้งหลังวาดหน้า)
+ */
 export function syncGeoapifyMaps({ onMapPick, onPinClick } = {}) {
   const elements = [...document.querySelectorAll('[data-flood-map]')];
   const connectedIds = new Set(elements.map((element) => element.id));
@@ -168,6 +201,9 @@ export function syncGeoapifyMaps({ onMapPick, onPinClick } = {}) {
   });
 }
 
+/**
+ * เลื่อนแผนที่ไปยังพิกัดที่ระบุ (source = "admin" หรือ "public")
+ */
 export function focusGeoapifyMap({ lat, lng, source }) {
   const mapId = source === 'admin' ? 'admin-flood-map' : 'public-flood-map';
   const instance = mapInstances.get(mapId);
