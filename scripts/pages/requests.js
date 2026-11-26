@@ -3,12 +3,18 @@ import { requests } from '../store.js';
 import { escapeHtml, formatTime } from '../utils.js';
 import { isSupabaseConfigured } from '../supabase-client.js';
 
+/**
+ * สร้างตัวเลือกสถานะคำร้อง (<option>) โดยเลือกสถานะปัจจุบัน
+ */
 function statusOptions(current) {
   return ['รอประสานงาน', 'กำลังดำเนินการ', 'ช่วยเหลือแล้ว']
     .map((status) => `<option ${status === current ? 'selected' : ''}>${status}</option>`)
     .join('');
 }
 
+/**
+ * สร้าง HTML หน้าคำร้องขอความช่วยเหลือ (ตาราง ค้นหา ปรับสถานะ)
+ */
 export function renderRequests() {
   const rows = [...requests].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   return `
