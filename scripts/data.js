@@ -50,6 +50,12 @@ export const supplies = [
 
 export const volunteerSummary = { teams: 3, available: 12 };
 
+/**
+ * อ่านรายการจาก localStorage (โหมดตัวอย่าง) พร้อมตรวจรูปแบบ ถ้าอ่านไม่ได้ใช้ค่าสำรอง
+ * @param {string} key
+ * @param {Array} fallback
+ * @param {Function} validator
+ */
 function readStorage(key, fallback, validator) {
   try {
     const saved = localStorage.getItem(key);
@@ -68,10 +74,16 @@ function readStorage(key, fallback, validator) {
   }
 }
 
+/**
+ * ตรวจว่าข้อมูลเป็นคำร้องขอความช่วยเหลือที่ใช้ได้ (มี id และ location)
+ */
 function isRequest(request) {
   return request && typeof request.id === 'string' && typeof request.location === 'string';
 }
 
+/**
+ * ปรับรูปแบบหมุดน้ำท่วมให้เป็นมาตรฐาน (รองรับ lat/lng เดิม) คืน null ถ้าข้อมูลไม่ถูกต้อง
+ */
 function normalizeFloodPin(pin) {
   if (!pin || typeof pin.id !== 'string' || typeof pin.area !== 'string'
     || !FLOOD_STATUSES.some((status) => status.label === pin.status)) return null;
@@ -107,6 +119,9 @@ function normalizeFloodPin(pin) {
   };
 }
 
+/**
+ * บันทึกข้อมูลลง localStorage คืน true ถ้าสำเร็จ
+ */
 function persist(key, value) {
   try {
     localStorage.setItem(key, JSON.stringify(value));
@@ -121,6 +136,9 @@ export let requests = readStorage(STORAGE_KEY, defaultRequests, isRequest);
 export let floodPins = readStorage(FLOOD_STORAGE_KEY, defaultFloodPins, (pin) => normalizeFloodPin(pin) !== null)
   .map(normalizeFloodPin);
 
+/**
+ * นับจำนวนหมุดน้ำท่วมแยกตามสถานะ (ข้อมูลโหมดตัวอย่าง)
+ */
 export function getFloodCounts() {
   return Object.fromEntries(FLOOD_STATUSES.map((status) => [
     status.label,
@@ -128,16 +146,25 @@ export function getFloodCounts() {
   ]));
 }
 
+/**
+ * คืนข้อมูลสถานะน้ำท่วม (สี/คลาส) จากชื่อสถานะ ถ้าไม่พบใช้ "เฝ้าระวัง"
+ */
 export function getFloodStatus(status) {
   return FLOOD_STATUSES.find((item) => item.label === status) || FLOOD_STATUSES[1];
 }
 
+/**
+ * บันทึกรายการคำร้องลง localStorage (โหมดตัวอย่าง)
+ */
 export function saveRequests(nextRequests) {
   if (!persist(STORAGE_KEY, nextRequests)) return false;
   requests = nextRequests;
   return true;
 }
 
+/**
+ * บันทึกรายการหมุดน้ำท่วมลง localStorage (โหมดตัวอย่าง)
+ */
 export function saveFloodPins(nextPins) {
   if (!persist(FLOOD_STORAGE_KEY, nextPins)) return false;
   floodPins = nextPins;
