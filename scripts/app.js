@@ -1,5 +1,6 @@
 import { pages } from './data.js';
 import { createRecord, floodPins, getFloodCounts, refreshRemoteData, requests, updateRecord } from './store.js';
+import { initNetworkStatus, saveRequestResilient } from './offline-queue.js';
 import { getSupabaseClient, fetchAdminProfile, getSupabaseConfigurationError, hasSupabaseConfiguration, isSupabaseConfigured } from './supabase-client.js';
 import { focusGeoapifyMap, syncGeoapifyMaps } from './geoapify-map.js';
 import { mountAdminCrudDialog } from './admin-crud.js';
@@ -462,10 +463,22 @@ requestForm.addEventListener('submit', async (event) => {
     createdAt: new Date().toISOString(),
   };
   try {
-    await createRecord('requests', newRequest);
+    const result = await saveRequestResilient(
+      (record) => createRecord('requests', record),
+      newRequest,
+    );
     requestForm.reset();
     requestForm.elements.people.value = '1';
     requestDialog.close();
+    if (result === 'queued') {
+      await Swal.fire({
+        icon: 'info',
+        title: 'บันทึกไว้ในเครื่องแล้ว',
+        text: 'เน็ตอ่อนหรือออฟไลน์ ระบบจะส่งข้อมูลให้อัตโนมัติเมื่อสัญญาณกลับมา',
+        confirmButtonText: 'รับทราบ',
+      });
+      return;
+    }
     if (!adminApp.hidden) {
       if (isSupabaseConfigured()) {
         try {
@@ -483,6 +496,8 @@ requestForm.addEventListener('submit', async (event) => {
     showStorageError(error);
   }
 });
+
+initNetworkStatus((record) => createRecord('requests', record));
 
 // ── [เหตุการณ์] เปลี่ยนค่า dropdown ในหน้าเจ้าหน้าที่ (สถานะคำร้อง/สถานะน้ำท่วม) ──
 pageContent.addEventListener('change', async (event) => {
