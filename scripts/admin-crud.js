@@ -82,10 +82,16 @@ const definitions = {
   },
 };
 
+/**
+ * คืนรายการข้อมูลปัจจุบันของชุดข้อมูลที่ระบุ
+ */
 function collectionRecords(name) {
   return { requests, floodPins, shelters, supplies, volunteers, announcements }[name];
 }
 
+/**
+ * สร้าง HTML ของช่องกรอกตามชนิดฟิลด์ (checkbox/select/textarea/input)
+ */
 function fieldValue(field, record) {
   const value = record?.[field.name];
   if (field.type === 'checkbox') return `<input name="${field.name}" type="checkbox" ${value ? 'checked' : ''} />`;
@@ -105,6 +111,9 @@ function fieldValue(field, record) {
   return `<input name="${field.name}" type="${type}" value="${escapeHtml(valueString)}" ${field.min !== undefined ? `min="${field.min}"` : ''} ${field.step ? `step="${field.step}"` : ''} ${field.required ? 'required' : ''} />`;
 }
 
+/**
+ * สร้าง HTML ของฟิลด์พร้อมป้ายชื่อ สำหรับฟอร์มเพิ่ม/แก้ไข
+ */
 function renderField(field, record) {
   const control = fieldValue(field, record);
   if (field.type === 'checkbox') {
@@ -113,6 +122,10 @@ function renderField(field, record) {
   return `<label class="${field.wide ? 'form-wide' : ''}">${escapeHtml(field.label)}${control}</label>`;
 }
 
+/**
+ * สร้างรหัสรายการใหม่ เช่น "SH-1a2b3c4d"
+ * @param {string} prefix
+ */
 function createId(prefix) {
   const suffix = typeof crypto.randomUUID === 'function'
     ? crypto.randomUUID().slice(0, 8)
@@ -120,6 +133,9 @@ function createId(prefix) {
   return `${prefix}-${suffix}`;
 }
 
+/**
+ * อ่านค่าจากฟอร์มและแปลงชนิด (boolean/number/วันที่/ข้อความ)
+ */
 function readFormValue(field, formData) {
   if (field.type === 'checkbox') return formData.has(field.name);
   const value = formData.get(field.name);
@@ -128,6 +144,9 @@ function readFormValue(field, formData) {
   return String(value || '').trim();
 }
 
+/**
+ * แสดง popup เมื่อบันทึกข้อมูลไม่สำเร็จ
+ */
 function showFailure(error) {
   console.error('Unable to manage record:', error);
   Swal.fire({
@@ -138,6 +157,11 @@ function showFailure(error) {
   });
 }
 
+/**
+ * สร้างกล่องเพิ่ม/แก้ไข/ลบข้อมูลของเจ้าหน้าที่ (เรียกครั้งเดียวตอนเริ่มแอป) นิยามฟิลด์แต่ละเมนูอยู่ใน definitions ด้านบน
+ * @param {Function} canManage - ตรวจสิทธิ์จัดการชุดข้อมูล
+ * @param {Function} onSaved - เรียกหลังบันทึกสำเร็จ
+ */
 export function mountAdminCrudDialog(canManage, onSaved) {
   if (document.querySelector('#admin-record-dialog')) return;
   document.body.insertAdjacentHTML('beforeend', `
