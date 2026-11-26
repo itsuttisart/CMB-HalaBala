@@ -19,6 +19,9 @@ const initialAnnouncements = [
   { id: 'AN-003', tag: 'ช่องทางช่วยเหลือ', title: 'แจ้งเหตุฉุกเฉินผ่านสายด่วน ปภ. 1784', details: 'หากเป็นเหตุเร่งด่วน โปรดติดต่อหน่วยงานฉุกเฉินโดยตรง ไม่ใช้ต้นแบบนี้แทนช่องทางแจ้งเหตุจริง', isPublished: true, expiresAt: '' },
 ];
 
+/** ตัวเลขสรุปสำหรับหน้าประชาชน (ได้จากฟังก์ชัน get_public_summary ใน Supabase) */
+let remoteSummary = null;
+
 const collections = {
   requests: {
     table: 'help_requests',
@@ -157,6 +160,44 @@ export async function refreshRemoteData() {
     return [name, data.map((row) => fromDatabase(name, row))];
   }));
   results.forEach(([name, rows]) => assignCollection(name, rows));
+  try {
+    const { data, error } = await client.rpc('get_public_summary');
+    if (error) throw error;
+    remoteSummary = data;
+  } catch (error) {
+    console.error('Unable to load public summary (run the public_summary migration):', error);
+    remoteSummary = null;
+  }
+}
+
+/**
+ * ตัวเลขสรุปสำหรับหน้าหลักประชาชน (เคสทั้งหมด/รอ/กำลังทำ/เสร็จ, อาสาสมัคร, อุปกรณ์)
+ * โหมด Supabase อ่านจากฟังก์ชัน get_public_summary (เฉพาะตัวเลขรวม ไม่เปิดข้อมูลส่วนตัว)
+ * โหมดตัวอย่างคำนวณจากข้อมูลในเบราว์เซอร์
+ * @returns {object|null} null เมื่อโหลดสรุปจาก Supabase ไม่ได้
+ */
+export function getPublicSummary() {
+  if (hasSupabaseConfiguration()) {
+    if (!remoteSummary) return null;
+    return {
+      requestsTotal: Number(remoteSummary.requests_total || 0),
+      pending: Number(remoteSummary.requests_pending || 0),
+      inProgress: Number(remoteSummary.requests_in_progress || 0),
+      done: Number(remoteSummary.requests_done || 0),
+      volunteerTeams: Number(remoteSummary.volunteer_teams || 0),
+      volunteersTotal: Number(remoteSummary.volunteers_total || 0),
+      supplyItems: Number(remoteSummary.supply_items || 0),
+    };
+  }
+  return {
+    requestsTotal: requests.length,
+    pending: requests.filter((item) => item.status === 'รอประสานงาน').length,
+    inProgress: requests.filter((item) => item.status === 'กำลังดำเนินการ').length,
+    done: requests.filter((item) => item.status === 'ช่วยเหลือแล้ว').length,
+    volunteerTeams: volunteers.length,
+    volunteersTotal: volunteers.reduce((total, team) => total + Number(team.headcount || 0), 0),
+    supplyItems: supplies.length,
+  };
 }
 
 /**
