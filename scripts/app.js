@@ -265,6 +265,11 @@ document.addEventListener('click', (event) => {
     return;
   }
   if (event.target.closest('#open-login')) {
+    if (currentProfile) {
+      showView('admin');
+      void renderPage('dashboard');
+      return;
+    }
     showView('login');
     return;
   }
@@ -484,10 +489,18 @@ async function initializeApp() {
     const { data, error } = await client.auth.getSession();
     if (error) throw error;
     if (data.session?.user) {
-      await enterAdmin(data.session.user);
-    } else {
-      await refreshPublicViews();
+      try {
+        currentProfile = await fetchAdminProfile(data.session.user.id);
+        demoAdmin = false;
+        updateAdminChrome(currentProfile);
+      } catch (profileError) {
+        console.error('Stored session has no admin profile:', profileError);
+        await client.auth.signOut();
+        currentProfile = null;
+        updateAdminChrome(null);
+      }
     }
+    await refreshPublicViews();
   } catch (error) {
     console.error('Unable to initialize Supabase:', error);
     syncFloodMaps();
