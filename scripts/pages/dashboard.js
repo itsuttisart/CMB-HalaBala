@@ -3,6 +3,9 @@ import { floodPins, getFloodCounts, requests, shelters, supplies, getVolunteerSu
 import { escapeHtml, formatDate, formatTime } from '../utils.js';
 import { isSupabaseConfigured } from '../supabase-client.js';
 
+/**
+ * สร้าง HTML แถวคำร้องล่าสุดบนแดชบอร์ด
+ */
 function renderRequestRow(request) {
   const symbol = request.urgent ? '!' : '↗';
   const label = request.urgent ? 'เร่งด่วน' : request.need;
@@ -21,6 +24,9 @@ function renderRequestRow(request) {
     </div>`;
 }
 
+/**
+ * สร้าง HTML หน้าภาพรวมสถานการณ์ (การ์ดสรุป คำร้องล่าสุด ศูนย์พักพิง อาสา)
+ */
 export function renderDashboard() {
   const volunteerSummary = getVolunteerSummary();
   const urgentCount = requests.filter((request) => request.urgent && request.status !== 'ช่วยเหลือแล้ว').length;
