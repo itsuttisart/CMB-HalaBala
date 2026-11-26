@@ -36,16 +36,27 @@ let currentPage = 'dashboard';
 let currentProfile = null;
 let demoAdmin = false;
 
+/**
+ * แปลงชื่อชุดข้อมูลเป็นรหัสเมนูสำหรับตรวจสิทธิ์ (floodPins → flood-monitor)
+ */
 function moduleForCollection(collection) {
   return collection === 'floodPins' ? 'flood-monitor' : collection;
 }
 
+/**
+ * ตรวจว่าผู้ใช้ปัจจุบันเพิ่ม/แก้ไข/ลบชุดข้อมูลนี้ได้หรือไม่
+ * @param {string} collection
+ */
 function canManage(collection) {
   if (!hasSupabaseConfiguration()) return demoAdmin;
   return Boolean(currentProfile
     && (currentProfile.role === 'superadmin' || currentProfile.modules.includes(moduleForCollection(collection))));
 }
 
+/**
+ * ตรวจว่าผู้ใช้ปัจจุบันเข้าเมนูนี้ได้หรือไม่ (superadmin เข้าได้ทุกเมนู)
+ * @param {string} page
+ */
 function canAccessPage(page) {
   if (page === 'dashboard') return true;
   if (page === 'admin-users') return Boolean(currentProfile?.role === 'superadmin');
@@ -54,6 +65,9 @@ function canAccessPage(page) {
     && (currentProfile.role === 'superadmin' || currentProfile.modules.includes(page)));
 }
 
+/**
+ * ซ่อน/แสดงเมนูและปุ่มลัดตามสิทธิ์ของผู้ใช้
+ */
 function applyModuleAccess() {
   document.querySelectorAll('.nav-item[data-page]').forEach((item) => {
     item.hidden = !canAccessPage(item.dataset.page);
@@ -63,6 +77,9 @@ function applyModuleAccess() {
   });
 }
 
+/**
+ * สั่งวาดแผนที่น้ำท่วมใหม่และผูกการแตะแผนที่/คลิกหมุด
+ */
 function syncFloodMaps() {
   syncGeoapifyMaps({
     onMapPick: ({ lat, lng }) => openFloodReportDialog({ lat, lng, source: adminApp.hidden ? 'public' : 'admin' }),
@@ -70,6 +87,10 @@ function syncFloodMaps() {
   });
 }
 
+/**
+ * วาดหน้าของเจ้าหน้าที่ตามชื่อเมนู (ตรวจสิทธิ์ก่อน แล้วอัปเดต breadcrumb, ตัวเลขแจ้งเตือน, เมนูที่เลือก)
+ * @param {string} [page] - รหัสเมนู เช่น "shelters"
+ */
 async function renderPage(page = currentPage) {
   const requestedPage = pages[page] ? page : 'dashboard';
   if (!canAccessPage(requestedPage)) {
@@ -111,6 +132,10 @@ async function renderPage(page = currentPage) {
   syncFloodMaps();
 }
 
+/**
+ * สลับมุมมองหลัก: "public" (หน้าประชาชน), "login", "admin" (ต้องล็อกอินก่อนเมื่อต่อ Supabase)
+ * @param {"public"|"login"|"admin"} view
+ */
 function showView(view) {
   if (view === 'admin' && hasSupabaseConfiguration() && !currentProfile) {
     Swal.fire({ icon: 'info', title: 'กรุณาเข้าสู่ระบบ', text: 'เข้าสู่ระบบด้วยบัญชีเจ้าหน้าที่ที่ได้รับสิทธิ์ก่อน', confirmButtonText: 'รับทราบ' });
@@ -123,6 +148,9 @@ function showView(view) {
   window.requestAnimationFrame(syncFloodMaps);
 }
 
+/**
+ * โหลดข้อมูลล่าสุดแล้ววาดส่วนสาธารณะ (และหน้าแอดมินถ้าเปิดอยู่) ใหม่
+ */
 async function refreshPublicViews() {
   if (isSupabaseConfigured()) await refreshRemoteData();
   document.querySelector('#public-flood-monitor-root').innerHTML = renderPublicFloodMonitor();
@@ -132,6 +160,10 @@ async function refreshPublicViews() {
   else syncFloodMaps();
 }
 
+/**
+ * รีเฟรชข้อมูลน้ำท่วมทุกหน้า พร้อมแสดง popup ถ้าโหลดไม่สำเร็จ
+ * @returns {Promise<boolean>}
+ */
 async function refreshFloodViews() {
   try {
     await refreshPublicViews();
@@ -143,6 +175,9 @@ async function refreshFloodViews() {
   }
 }
 
+/**
+ * เรียกหลังเพิ่ม/แก้ไข/ลบข้อมูล: โหลดข้อมูลใหม่แล้ววาดหน้าใหม่
+ */
 async function afterRecordMutation() {
   try {
     if (isSupabaseConfigured()) await refreshRemoteData();
@@ -164,6 +199,9 @@ async function afterRecordMutation() {
   return true;
 }
 
+/**
+ * เปิดหน้าเจ้าหน้าที่แบบตัวอย่าง (ใช้ได้เฉพาะเมื่อยังไม่ต่อ Supabase)
+ */
 async function openAdminPreview() {
   if (hasSupabaseConfiguration()) {
     await Swal.fire({ icon: 'info', title: 'ปิดโหมดตัวอย่างแล้ว', text: 'เมื่อเชื่อม Supabase จะต้องเข้าสู่ระบบด้วยบัญชีเจ้าหน้าที่ที่ได้รับสิทธิ์', confirmButtonText: 'รับทราบ' });
@@ -175,16 +213,26 @@ async function openAdminPreview() {
   await renderPage('dashboard');
 }
 
+/**
+ * เปิดกล่องแจ้งเหตุขอความช่วยเหลือ
+ */
 function openRequestDialog() {
   if (!requestDialog.open) requestDialog.showModal();
   window.requestAnimationFrame(() => requestForm.elements.name.focus({ preventScroll: true }));
 }
 
+/**
+ * สร้างหมายเลขอ้างอิงคำร้อง เช่น "HB-1A2B3C4D"
+ */
 function makeRequestId() {
   const suffix = typeof crypto.randomUUID === 'function' ? crypto.randomUUID().slice(0, 8).toUpperCase() : Date.now().toString(36).toUpperCase();
   return `HB-${suffix}`;
 }
 
+/**
+ * แสดง popup ยืนยันว่ารับคำร้องแล้ว
+ * @param {string} requestId
+ */
 function showSavedAlert(requestId) {
   const savedToDatabase = isSupabaseConfigured();
   Swal.fire({
@@ -196,6 +244,10 @@ function showSavedAlert(requestId) {
   });
 }
 
+/**
+ * แสดง popup เมื่อบันทึก/โหลดข้อมูลไม่สำเร็จ
+ * @param {Error} error
+ */
 function showStorageError(error) {
   console.error('Unable to save submitted data:', error);
   Swal.fire({
@@ -206,6 +258,10 @@ function showStorageError(error) {
   });
 }
 
+/**
+ * อัปเดตส่วนหัว/ชื่อผู้ใช้/ปุ่มออกจากระบบ/ข้อความสถานะตามการล็อกอิน
+ * @param {object|null} profile - โปรไฟล์เจ้าหน้าที่ หรือ null
+ */
 function updateAdminChrome(profile) {
   const isConnected = isSupabaseConfigured();
   const configError = getSupabaseConfigurationError();
@@ -230,6 +286,10 @@ function updateAdminChrome(profile) {
   applyModuleAccess();
 }
 
+/**
+ * เข้าหน้าเจ้าหน้าที่: ดึงโปรไฟล์ โหลดข้อมูล แล้วแสดงแดชบอร์ด (ถ้าไม่มีสิทธิ์จะออกจากระบบและโยน error)
+ * @param {object} user - ผู้ใช้จาก Supabase Auth
+ */
 async function enterAdmin(user) {
   const client = await getSupabaseClient();
   if (!client) throw new Error('Supabase ยังไม่ได้ตั้งค่า');
@@ -248,6 +308,7 @@ async function enterAdmin(user) {
   }
 }
 
+// ── [เหตุการณ์] คลิกทั่วทั้งหน้า: ปักหมุด/แจ้งเหตุ/สลับมุมมอง/ล็อกอิน/ออกจากระบบ/เลือกเมนู ──
 document.addEventListener('click', (event) => {
   if (event.target.closest('[data-action="manual-flood-report"]')) {
     openFloodReportDialog({ source: adminApp.hidden ? 'public' : 'admin' });
@@ -315,6 +376,7 @@ document.addEventListener('click', (event) => {
   }
 });
 
+// ── [เหตุการณ์] ส่งฟอร์มล็อกอินเจ้าหน้าที่ (อีเมล + รหัสผ่านผ่าน Supabase Auth) ──
 document.querySelector('#login-form').addEventListener('submit', async (event) => {
   event.preventDefault();
   if (!isSupabaseConfigured()) {
@@ -342,6 +404,7 @@ document.querySelector('#login-form').addEventListener('submit', async (event) =
   }
 });
 
+// ── [เหตุการณ์] คลิกในหน้าเจ้าหน้าที่: ยืนยันรายงานน้ำท่วม / ไปยังรายงานรอตรวจสอบ ──
 pageContent.addEventListener('click', (event) => {
   const verifyButton = event.target.closest('[data-action="verify-flood-report"]');
   if (verifyButton) {
@@ -357,6 +420,7 @@ pageContent.addEventListener('click', (event) => {
   window.setTimeout(() => firstPendingRow.classList.remove('is-highlighted'), 1800);
 });
 
+// ── [เหตุการณ์] เปิด/ปิดเมนูข้างบนมือถือ ──
 document.querySelector('#mobile-menu').addEventListener('click', (event) => {
   const isOpen = document.querySelector('#sidebar').classList.toggle('open');
   event.currentTarget.setAttribute('aria-expanded', String(isOpen));
@@ -365,6 +429,7 @@ document.querySelector('#mobile-menu').addEventListener('click', (event) => {
 document.querySelector('#close-dialog').addEventListener('click', () => requestDialog.close());
 document.querySelector('#cancel-dialog').addEventListener('click', () => requestDialog.close());
 
+// ── [เหตุการณ์] ส่งฟอร์มแจ้งเหตุขอความช่วยเหลือจากประชาชน ──
 requestForm.addEventListener('submit', async (event) => {
   event.preventDefault();
   if (!requestForm.reportValidity()) return;
@@ -405,6 +470,7 @@ requestForm.addEventListener('submit', async (event) => {
   }
 });
 
+// ── [เหตุการณ์] เปลี่ยนค่า dropdown ในหน้าเจ้าหน้าที่ (สถานะคำร้อง/สถานะน้ำท่วม) ──
 pageContent.addEventListener('change', async (event) => {
   const floodSelect = event.target.closest('[data-flood-status-id]');
   if (floodSelect) {
@@ -445,6 +511,7 @@ pageContent.addEventListener('change', async (event) => {
   }
 });
 
+// ── [เหตุการณ์] พิมพ์ค้นหาในตารางคำร้อง ──
 pageContent.addEventListener('input', (event) => {
   if (event.target.id !== 'request-search') return;
   const query = event.target.value.trim().toLowerCase();
@@ -453,6 +520,7 @@ pageContent.addEventListener('input', (event) => {
   });
 });
 
+// ── [เริ่มต้น] ตั้งวันที่/เวลาอัปเดต, สร้างกล่องฟอร์มต่าง ๆ, วาดส่วนสาธารณะ แล้วเรียก initializeApp() ──
 document.querySelector('#today-date').textContent = new Intl.DateTimeFormat('th-TH', { dateStyle: 'medium' }).format(new Date());
 document.querySelector('#updated-time').textContent = new Intl.DateTimeFormat('th-TH', { hour: '2-digit', minute: '2-digit' }).format(new Date());
 mountFloodReportDialog();
@@ -465,6 +533,9 @@ document.querySelector('#public-shelters-root').innerHTML = renderPublicShelters
 document.querySelector('#public-announcements-root').innerHTML = renderPublicAnnouncements();
 updateAdminChrome(null);
 
+/**
+ * จุดเริ่มต้นของแอป: ตรวจค่า Supabase, จำ session เดิมไว้แต่ยังแสดงหน้าสาธารณะก่อน, ฟังเหตุการณ์ออกจากระบบ
+ */
 async function initializeApp() {
   const configurationError = getSupabaseConfigurationError();
   if (configurationError) {
