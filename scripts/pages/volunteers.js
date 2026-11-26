@@ -3,6 +3,9 @@ import { getVolunteerSummary, volunteers } from '../store.js';
 import { escapeHtml } from '../utils.js';
 import { isSupabaseConfigured } from '../supabase-client.js';
 
+/**
+ * สร้าง HTML หน้าอาสาสมัครและทีม
+ */
 export function renderVolunteers() {
   const volunteerSummary = getVolunteerSummary();
   return `
