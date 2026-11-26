@@ -3,6 +3,9 @@ import { announcements } from '../store.js';
 import { escapeHtml } from '../utils.js';
 import { isSupabaseConfigured } from '../supabase-client.js';
 
+/**
+ * สร้าง HTML หน้าข่าวประกาศ (เจ้าหน้าที่)
+ */
 export function renderAnnouncements() {
   return `
     <div class="page-heading"><div><span class="eyebrow">${pages.announcements.eyebrow}</span><h1>${pages.announcements.title}</h1><p>${pages.announcements.description}</p></div><button class="button button-primary" data-record-action="create" data-collection="announcements">＋ เพิ่มประกาศ</button></div>
@@ -10,6 +13,9 @@ export function renderAnnouncements() {
     <div class="content-grid">${announcements.length ? announcements.map((notice) => `<article class="content-card"><span class="card-kicker">${escapeHtml(notice.tag)} <span class="footer-dot">•</span> ${notice.isPublished ? 'เผยแพร่' : 'ฉบับร่าง'}</span><h3>${escapeHtml(notice.title)}</h3><p>${escapeHtml(notice.details)}</p><div class="record-actions"><button class="button button-outline button-small" data-record-action="edit" data-collection="announcements" data-record-id="${escapeHtml(notice.id)}">แก้ไข</button><button class="button button-quiet button-small" data-record-action="delete" data-collection="announcements" data-record-id="${escapeHtml(notice.id)}">ลบ</button></div></article>`).join('') : '<div class="empty-state"><strong>ยังไม่มีประกาศ</strong>กด “เพิ่มประกาศ” เพื่อเผยแพร่ข้อมูล</div>'}</div>`;
 }
 
+/**
+ * สร้าง HTML ข่าวประกาศที่เผยแพร่แล้ว (หน้าสาธารณะ)
+ */
 export function renderPublicAnnouncements() {
   const published = announcements.filter((notice) => notice.isPublished);
   return `
