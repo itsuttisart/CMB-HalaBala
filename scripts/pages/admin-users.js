@@ -13,6 +13,10 @@ export const ADMIN_MODULES = [
 
 export let managedAdmins = [];
 
+/**
+ * เรียก Edge Function "admin-users" (list/create/update/delete) พร้อมแปลง error เป็นข้อความไทยที่เข้าใจง่าย
+ * @param {object} body - { action, ... }
+ */
 async function callAdminFunction(body) {
   const client = await getSupabaseClient();
   if (!client) throw new Error('กรุณาตั้งค่า Supabase ก่อนจัดการบัญชี');
@@ -37,6 +41,9 @@ async function callAdminFunction(body) {
   return data;
 }
 
+/**
+ * โหลดรายชื่อผู้ดูแลเมนูจาก Edge Function เก็บไว้ใน managedAdmins
+ */
 export async function loadManagedAdmins() {
   const result = await callAdminFunction({ action: 'list' });
   managedAdmins = Array.isArray(result.users)
@@ -44,11 +51,17 @@ export async function loadManagedAdmins() {
     : [];
 }
 
+/**
+ * แปลงรหัสเมนูเป็นชื่อภาษาไทย คั่นด้วย " · "
+ */
 function moduleNames(modules) {
   const labels = new Map(ADMIN_MODULES.map((module) => [module.key, module.label]));
   return (modules || []).map((module) => labels.get(module) || module).join(' · ');
 }
 
+/**
+ * สร้าง HTML หน้า "ผู้ดูแลและสิทธิ์" (ตาราง + กล่องเชิญ/แก้ไขผู้ดูแล)
+ */
 export function renderAdminUsers() {
   return `
     <div class="page-heading"><div><span class="eyebrow">สิทธิ์และบัญชี</span><h1>จัดการบัญชีผู้ดูแล</h1><p>เชิญเจ้าหน้าที่และกำหนดสิทธิ์แยกตามเมนูได้จากหน้านี้</p></div><button class="button button-primary" data-admin-user-action="create">＋ เชิญผู้ดูแล</button></div>
@@ -82,6 +95,11 @@ export function renderAdminUsers() {
     </dialog>`;
 }
 
+/**
+ * ผูกปุ่มเชิญ/แก้ไข/ลบ/บันทึกบัญชีผู้ดูแล (ผูกครั้งเดียวต่อ container)
+ * @param {HTMLElement} container
+ * @param {Function} onChanged - เรียกหลังเปลี่ยนข้อมูลเพื่อวาดหน้าใหม่
+ */
 export function bindAdminUserControls(container, onChanged) {
   if (container.dataset.adminUsersBound === 'true') return;
   container.dataset.adminUsersBound = 'true';
