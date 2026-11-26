@@ -8,9 +8,9 @@ import {
 import { getSupabaseClient, hasSupabaseConfiguration } from './supabase-client.js';
 
 const initialVolunteerTeams = [
-  { id: 'VT-001', name: 'ทีมอพยพพื้นที่ทุ่งยาว', status: 'กำลังปฏิบัติงาน', mission: 'ประเมินพื้นที่และช่วยเคลื่อนย้ายผู้สูงอายุ', headcount: 4, equipment: 'เรือ 1 ลำ' },
-  { id: 'VT-002', name: 'ทีมขนส่งสิ่งของ', status: 'พร้อมสนับสนุน', mission: 'เตรียมส่งน้ำดื่มและอาหารแห้ง', headcount: 5, equipment: 'รถกระบะ 2 คัน' },
-  { id: 'VT-003', name: 'ทีมปฐมพยาบาล', status: 'กำลังปฏิบัติงาน', mission: 'สนับสนุนจุดพักพิงและคัดกรองผู้ป่วย', headcount: 3, equipment: 'ชุดปฐมพยาบาล' },
+  { id: 'VT-001', name: 'ทีมอพยพพื้นที่ทุ่งยาว', village: 'ทุ่งยาว', area: 'ต.บาเจาะ', contactName: 'สมชาย ใจดี', phone: '081-000-0001', status: 'กำลังปฏิบัติงาน', mission: 'ประเมินพื้นที่และช่วยเคลื่อนย้ายผู้สูงอายุ', headcount: 4, equipment: 'เรือ 1 ลำ' },
+  { id: 'VT-002', name: 'ทีมขนส่งสิ่งของ', village: 'ตลาดเก่า', area: 'ต.บาเจาะ', contactName: 'มานี ช่วยเหลือ', phone: '081-000-0002', status: 'พร้อมสนับสนุน', mission: 'เตรียมส่งน้ำดื่มและอาหารแห้ง', headcount: 5, equipment: 'รถกระบะ 2 คัน' },
+  { id: 'VT-003', name: 'ทีมปฐมพยาบาล', village: 'หมู่ 4', area: 'ต.บาเจาะ', contactName: 'วิชัย รักษา', phone: '081-000-0003', status: 'กำลังปฏิบัติงาน', mission: 'สนับสนุนจุดพักพิงและคัดกรองผู้ป่วย', headcount: 3, equipment: 'ชุดปฐมพยาบาล' },
 ];
 
 const initialAnnouncements = [
@@ -64,7 +64,9 @@ const collections = {
     table: 'volunteer_teams',
     storageKey: 'cmb-halabala-volunteers',
     fields: {
-      id: 'id', name: 'name', status: 'status', mission: 'mission', headcount: 'headcount',
+      id: 'id', name: 'name', village: 'village', area: 'area',
+      contactName: 'contact_name', phone: 'phone',
+      status: 'status', mission: 'mission', headcount: 'headcount',
       equipment: 'equipment', createdAt: 'created_at',
     },
   },
