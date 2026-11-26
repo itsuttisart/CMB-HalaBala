@@ -5,6 +5,8 @@ import { focusGeoapifyMap, syncGeoapifyMaps } from './geoapify-map.js';
 import { mountAdminCrudDialog } from './admin-crud.js';
 import { renderAdminUsers, loadManagedAdmins, bindAdminUserControls } from './pages/admin-users.js';
 import { renderDashboard } from './pages/dashboard.js';
+import { renderPublicSummary, renderPublicAlerts } from './pages/public-home.js';
+import { initPublicTabs, resetPublicView } from './public-tabs.js';
 import { renderFloodMonitor, renderPublicFloodMonitor, mountFloodReportDialog, openFloodReportDialog, bindFloodReportForm, handleFloodPinStatusChange, handleFloodReportVerification, showFloodPinDetails } from './pages/flood-monitor.js';
 import { renderMap } from './pages/map.js';
 import { renderRequests } from './pages/requests.js';
@@ -149,13 +151,22 @@ function showView(view) {
 }
 
 /**
+ * วาดทุกส่วนของหน้าประชาชนใหม่: สรุปตัวเลข, แจ้งเตือน, สถานการณ์น้ำท่วม, ศูนย์พักพิง, ข่าวประกาศ
+ */
+function renderPublicSections() {
+  document.querySelector('#public-summary-root').innerHTML = renderPublicSummary();
+  document.querySelector('#public-alerts-root').innerHTML = renderPublicAlerts();
+  document.querySelector('#public-flood-monitor-root').innerHTML = renderPublicFloodMonitor();
+  document.querySelector('#public-shelters-root').innerHTML = renderPublicShelters();
+  document.querySelector('#public-announcements-root').innerHTML = renderPublicAnnouncements();
+}
+
+/**
  * โหลดข้อมูลล่าสุดแล้ววาดส่วนสาธารณะ (และหน้าแอดมินถ้าเปิดอยู่) ใหม่
  */
 async function refreshPublicViews() {
   if (isSupabaseConfigured()) await refreshRemoteData();
-  document.querySelector('#public-flood-monitor-root').innerHTML = renderPublicFloodMonitor();
-  document.querySelector('#public-shelters-root').innerHTML = renderPublicShelters();
-  document.querySelector('#public-announcements-root').innerHTML = renderPublicAnnouncements();
+  renderPublicSections();
   if (!adminApp.hidden) await renderPage(currentPage);
   else syncFloodMaps();
 }
@@ -184,16 +195,12 @@ async function afterRecordMutation() {
   } catch (error) {
     console.error('The record was saved but the latest data could not be loaded:', error);
     await Swal.fire({ icon: 'warning', title: 'บันทึกแล้ว แต่โหลดรายการล่าสุดไม่สำเร็จ', text: error.message, confirmButtonText: 'รับทราบ' });
-    document.querySelector('#public-flood-monitor-root').innerHTML = renderPublicFloodMonitor();
-    document.querySelector('#public-shelters-root').innerHTML = renderPublicShelters();
-    document.querySelector('#public-announcements-root').innerHTML = renderPublicAnnouncements();
+    renderPublicSections();
     if (!adminApp.hidden) await renderPage(currentPage);
     else syncFloodMaps();
     return false;
   }
-  document.querySelector('#public-flood-monitor-root').innerHTML = renderPublicFloodMonitor();
-  document.querySelector('#public-shelters-root').innerHTML = renderPublicShelters();
-  document.querySelector('#public-announcements-root').innerHTML = renderPublicAnnouncements();
+  renderPublicSections();
   if (!adminApp.hidden) await renderPage(currentPage);
   else syncFloodMaps();
   return true;
@@ -280,6 +287,12 @@ function updateAdminChrome(profile) {
   document.querySelector('#login-system-note p').textContent = isConnected
     ? 'เข้าสู่ระบบด้วยอีเมลและรหัสผ่านของ Supabase บัญชีต้องได้รับการเชิญและกำหนดสิทธิ์แล้ว'
     : configError || 'ยังไม่ได้เชื่อม Supabase เพิ่ม URL และ publishable/anon key ใน supabase-config.js ก่อนเข้าสู่ระบบ';
+  const requestPrivacyNote = document.querySelector('#request-form .privacy-note');
+  if (requestPrivacyNote) {
+    requestPrivacyNote.textContent = isConnected
+      ? 'ข้อมูลติดต่อใช้เพื่อประสานงานช่วยเหลือเท่านั้น ไม่แสดงบนแผนที่สาธารณะ หากเป็นเหตุฉุกเฉินโทร 1784'
+      : 'ต้นแบบนี้ยังไม่ได้เชื่อมฐานข้อมูลกลาง ข้อมูลจะถูกเก็บไว้ในเบราว์เซอร์เครื่องนี้เท่านั้น';
+  }
   document.querySelector('#public-system-note').textContent = isConnected
     ? 'เชื่อมต่อ Supabase แล้ว · รายงานน้ำท่วมรอตรวจสอบก่อนเผยแพร่'
     : configError || 'ข้อมูลตัวอย่างสำหรับต้นแบบ · ยังไม่ใช่ช่องทางแจ้งเหตุจริง';
@@ -322,6 +335,7 @@ document.addEventListener('click', (event) => {
   const viewButton = event.target.closest('[data-view]');
   if (viewButton) {
     event.preventDefault();
+    if (viewButton.dataset.view === 'public') resetPublicView();
     showView(viewButton.dataset.view);
     return;
   }
@@ -523,14 +537,13 @@ pageContent.addEventListener('input', (event) => {
 // ── [เริ่มต้น] ตั้งวันที่/เวลาอัปเดต, สร้างกล่องฟอร์มต่าง ๆ, วาดส่วนสาธารณะ แล้วเรียก initializeApp() ──
 document.querySelector('#today-date').textContent = new Intl.DateTimeFormat('th-TH', { dateStyle: 'medium' }).format(new Date());
 document.querySelector('#updated-time').textContent = new Intl.DateTimeFormat('th-TH', { hour: '2-digit', minute: '2-digit' }).format(new Date());
+initPublicTabs(() => window.requestAnimationFrame(syncFloodMaps));
 mountFloodReportDialog();
 bindFloodReportForm(async () => {
   return refreshFloodViews();
 }, focusGeoapifyMap);
 mountAdminCrudDialog(canManage, afterRecordMutation);
-document.querySelector('#public-flood-monitor-root').innerHTML = renderPublicFloodMonitor();
-document.querySelector('#public-shelters-root').innerHTML = renderPublicShelters();
-document.querySelector('#public-announcements-root').innerHTML = renderPublicAnnouncements();
+renderPublicSections();
 updateAdminChrome(null);
 
 /**
