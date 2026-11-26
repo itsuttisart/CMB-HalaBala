@@ -208,5 +208,12 @@
         <footer class="page-footer"><span>CMB-HalaBala <span class="footer-dot">•</span> ระบบประสานงานช่วยเหลืออุทกภัย</span><span>ข้อมูลตัวอย่าง <span class="footer-dot">•</span> อัปเดต <span id="updated-time"></span></span></footer>
       </main>
     </div>
+    <script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js').catch(console.warn);
+    });
+  }
+</script>
   </body>
 </html>
